@@ -1,0 +1,2046 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2A3FBF">
+<title>Obour Branch Booking</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Obour Booking">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* Layout: sticky service-desk bar → week ribbon showing each day's load against capacity → status strip that doubles as the filter → job list (table on desktop, tickets on phone) → side sheet for one booking with its actions and log */
+:root{
+  --bg:#EEF0F3; --surface:#FFFFFF; --surface-2:#F6F7F9; --sunk:#E5E8ED;
+  --ink:#14161B; --ink-2:#434955; --muted:#6F7581; --line:#DCDFE5; --line-2:#C4C9D2;
+  --accent:#2A3FBF; --accent-hover:#21329C; --accent-ink:#FFFFFF; --accent-soft:#E3E7F8;
+  --danger:#B3263D; --danger-soft:#F8E1E5; --ok:#2B7A3A; --ok-soft:#DFF0E2; --amber:#8F5C00; --amber-soft:#F6EACB;
+  --s-booked:#33479E; --s-booked-bg:#E3E7F6;
+  --s-postponed:#AE4C14; --s-postponed-bg:#F8E3D5;
+  --s-received:#0A747A; --s-received-bg:#D9EFEF;
+  --s-ready:#8F5C00; --s-ready-bg:#F6EACB;
+  --s-delivered:#2B7A3A; --s-delivered-bg:#DFF0E2;
+  --s-noshow:#B3263D; --s-noshow-bg:#F8E1E5;
+  --s-cancelled:#646A75; --s-cancelled-bg:#E6E8EC;
+  --s-confirmed:#5A3FB0; --s-confirmed-bg:#ECE7F8;
+  --s-arrived:#0B6596; --s-arrived-bg:#DDEDF7;
+  --wa:#12804A; --wa-ink:#FFFFFF;
+  --series-1:#2a78d6; --c-del:#1baf7a; --c-in:#eda100; --c-up:#2a78d6; --c-ns:#eb6834; --c-off:#6250d6;
+  --scrim:rgba(17,19,24,.45);
+  --shadow-1:0 1px 2px rgba(17,19,24,.06);
+  --shadow-2:0 24px 60px rgba(17,19,24,.22);
+  --f-display:"Alexandria","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",system-ui,"Segoe UI",Tahoma,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r-sm:6px; --r-md:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1115; --surface:#171A20; --surface-2:#1C2027; --sunk:#252A33;
+  --ink:#ECEEF2; --ink-2:#B9BEC8; --muted:#8A909C; --line:#2A2F38; --line-2:#3B414C;
+  --accent:#93A2FF; --accent-hover:#AEB9FF; --accent-ink:#0D1233; --accent-soft:#232A4D;
+  --danger:#FF8C9D; --danger-soft:#3B1E26; --ok:#80D18D; --ok-soft:#1D3322; --amber:#E8B957; --amber-soft:#3A2F17;
+  --s-booked:#AAB6F3; --s-booked-bg:#252C4A;
+  --s-postponed:#F4A16C; --s-postponed-bg:#3D2617;
+  --s-received:#6ED2D5; --s-received-bg:#133536;
+  --s-ready:#E8B957; --s-ready-bg:#3A2F17;
+  --s-delivered:#80D18D; --s-delivered-bg:#1D3322;
+  --s-noshow:#FF8C9D; --s-noshow-bg:#3B1E26;
+  --s-cancelled:#A3A8B2; --s-cancelled-bg:#2A2E35;
+  --s-confirmed:#C2B1F6; --s-confirmed-bg:#2D2548;
+  --s-arrived:#7CC6EC; --s-arrived-bg:#14303F;
+  --wa:#43C97F; --wa-ink:#062313;
+  --series-1:#3987e5; --c-del:#199e70; --c-in:#c98500; --c-up:#3987e5; --c-ns:#d95926; --c-off:#9085e9;
+  --scrim:rgba(0,0,0,.6); --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 24px 60px rgba(0,0,0,.55);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F1115; --surface:#171A20; --surface-2:#1C2027; --sunk:#252A33;
+  --ink:#ECEEF2; --ink-2:#B9BEC8; --muted:#8A909C; --line:#2A2F38; --line-2:#3B414C;
+  --accent:#93A2FF; --accent-hover:#AEB9FF; --accent-ink:#0D1233; --accent-soft:#232A4D;
+  --danger:#FF8C9D; --danger-soft:#3B1E26; --ok:#80D18D; --ok-soft:#1D3322; --amber:#E8B957; --amber-soft:#3A2F17;
+  --s-booked:#AAB6F3; --s-booked-bg:#252C4A;
+  --s-postponed:#F4A16C; --s-postponed-bg:#3D2617;
+  --s-received:#6ED2D5; --s-received-bg:#133536;
+  --s-ready:#E8B957; --s-ready-bg:#3A2F17;
+  --s-delivered:#80D18D; --s-delivered-bg:#1D3322;
+  --s-noshow:#FF8C9D; --s-noshow-bg:#3B1E26;
+  --s-cancelled:#A3A8B2; --s-cancelled-bg:#2A2E35;
+  --s-confirmed:#C2B1F6; --s-confirmed-bg:#2D2548;
+  --s-arrived:#7CC6EC; --s-arrived-bg:#14303F;
+  --wa:#43C97F; --wa-ink:#062313;
+  --series-1:#3987e5; --c-del:#199e70; --c-in:#c98500; --c-up:#3987e5; --c-ns:#d95926; --c-off:#9085e9;
+  --scrim:rgba(0,0,0,.6); --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 24px 60px rgba(0,0,0,.55);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--surface)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-size:.92em;letter-spacing:.01em;direction:ltr;unicode-bidi:isolate}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg{width:18px;height:18px;flex:none}
+
+/* ---------- bars & wrappers ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in,.wrap{max-width:1240px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:44px;height:46px;border-radius:var(--r-sm);border:1.5px solid var(--ink);display:grid;grid-template-rows:auto 1fr;overflow:hidden;flex:none;background:var(--surface)}
+.mark span{background:var(--ink);color:var(--surface);font-size:10px;font-weight:600;text-align:center;line-height:16px}
+.mark b{font-family:var(--f-display);font-size:19px;display:grid;place-items:center;line-height:1;font-variant-numeric:tabular-nums}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:600;font-size:19px;line-height:1.3;text-wrap:balance}
+.brand p{margin:0;color:var(--muted);font-size:12.5px}
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.user-chip{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-size:13px;max-width:100%}
+.user-chip .who{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.user-chip .who b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.user-chip .who small{color:var(--muted);font-size:11.5px}
+.av{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:none;background:var(--sunk)}
+.av.sm{width:22px;height:22px}
+
+.wrap{padding-block:18px 64px;display:grid;gap:16px}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:600;font-size:13.5px;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn:hover{background:var(--surface-2);border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--surface-2);border-color:var(--line)}
+.btn.danger{color:var(--danger);border-color:var(--danger-soft);background:var(--surface)}
+.btn.danger:hover{background:var(--danger-soft)}
+.btn.danger-solid{background:var(--danger);border-color:var(--danger);color:var(--surface)}
+.btn.mfg{color:var(--amber);border-color:var(--amber-soft);background:var(--amber-soft)}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.btn.icon{padding:0;width:38px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.link{border:0;background:none;padding:0;color:var(--accent);font-weight:600;font-size:12.5px}
+.link:hover{text-decoration:underline}
+
+/* ---------- banners ---------- */
+#banner:empty{display:none}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--ink);font-size:13.5px}
+.banner.warn{background:var(--amber-soft)}
+.banner.bad{background:var(--danger-soft)}
+.banner b{font-weight:600}
+
+/* ---------- date bar ---------- */
+.datebar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 20px;align-items:center}
+.date-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.date-title{display:flex;flex-direction:column;line-height:1.2;min-width:118px;text-align:center}
+.date-title span{color:var(--muted);font-size:12.5px}
+.date-title strong{font-family:var(--f-display);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
+.date-pick input{height:34px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:0 8px;font-size:13px}
+.ribbon{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:7px 8px 8px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);text-align:start;min-width:0;position:relative}
+.day:hover{border-color:var(--line-2)}
+.day .dn{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day .dd{font-family:var(--f-display);font-weight:600;font-size:17px;line-height:1.1;font-variant-numeric:tabular-nums}
+.day .load{height:4px;border-radius:2px;background:var(--sunk);overflow:hidden}
+.day .load i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.day.full .load i{background:var(--amber)}
+.day.over .load i{background:var(--danger)}
+.day .cnt.full{color:var(--amber);font-weight:600}
+.day.over .cnt.full{color:var(--danger)}
+.day .cnt{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day.today .dn::after{content:" · اليوم";color:var(--accent);font-weight:600}
+.day.sel{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.day.sel .dn,.day.sel .cnt{color:var(--surface);opacity:.75}
+.day.sel.today .dn::after{color:var(--surface)}
+.day.sel .load{background:color-mix(in srgb,var(--surface) 25%,transparent)}
+.day.sel .load i{background:var(--surface)}
+.day.sel.full .load i{background:var(--amber-soft)}
+.day.sel .cnt.full{color:var(--surface);opacity:1}
+.day.sel.over .load i{background:var(--s-noshow-bg)}
+
+/* ---------- status strip ---------- */
+.stats{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.stat{display:flex;align-items:baseline;gap:8px;padding:8px 12px;border-radius:var(--r-sm);border:1px solid transparent;background:transparent;text-align:start}
+.stat:hover{background:var(--surface)}
+.stat b{font-family:var(--f-display);font-weight:600;font-size:21px;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
+.stat span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot,var(--ink-2))}
+.stat.on{background:var(--surface);border-color:var(--ink);box-shadow:var(--shadow-1)}
+.stat[data-k="all"] span::before{display:none}
+.stat[data-k="mfg"] b{color:var(--amber)}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;background:var(--sunk);border-radius:var(--r-sm);padding:3px;gap:2px}
+.seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg button{white-space:nowrap;flex:none;border:0;background:transparent;padding:6px 12px;border-radius:4px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-1)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1 1 360px;justify-content:flex-end;min-width:0}
+.search{display:flex;align-items:center;gap:6px;height:38px;padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);flex:1 1 240px;max-width:380px;min-width:0;color:var(--muted)}
+.search input{border:0;outline:0;background:transparent;width:100%;color:var(--ink);min-width:0}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tools select{height:38px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:0 10px;max-width:200px}
+
+/* ---------- list ---------- */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden}
+.thead,.row{display:grid;grid-template-columns:76px minmax(150px,1.3fr) minmax(150px,1.25fr) 132px 140px 150px 136px;gap:12px;align-items:center;padding-inline:16px}
+.thead{padding-block:9px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.row{padding-block:11px;border-bottom:1px solid var(--line);cursor:pointer;outline-offset:-2px}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--surface-2)}
+.row.dim{opacity:.62}
+.row.dim:hover{opacity:1}
+.grp{padding:10px 16px 8px;background:var(--surface-2);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;font-size:12.5px}
+.grp b{font-weight:600;color:var(--ink)}
+.grp span{color:var(--muted)}
+.c-time{display:flex;align-items:baseline;gap:3px;font-variant-numeric:tabular-nums}
+.c-time b{font-family:var(--f-display);font-weight:600;font-size:16px}
+.c-time span{font-size:11.5px;color:var(--muted)}
+.c-cust,.c-car,.c-by,.c-st{min-width:0}
+.nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2);direction:ltr;unicode-bidi:isolate;display:inline-block}
+.car{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-by{display:flex;align-items:center;gap:8px;font-size:13px}
+.c-by span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-st{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.c-act{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.quick{min-width:56px}
+.quick.alt{color:var(--s-postponed)}
+
+.pill{--c:var(--s-booked);--cb:var(--s-booked-bg);display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;color:var(--c);background:var(--cb);white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill[data-s="postponed"]{--c:var(--s-postponed);--cb:var(--s-postponed-bg)}
+.pill[data-s="received"]{--c:var(--s-received);--cb:var(--s-received-bg)}
+.pill[data-s="ready"]{--c:var(--s-ready);--cb:var(--s-ready-bg)}
+.pill[data-s="delivered"]{--c:var(--s-delivered);--cb:var(--s-delivered-bg)}
+.pill[data-s="noshow"]{--c:var(--s-noshow);--cb:var(--s-noshow-bg)}
+.pill[data-s="cancelled"]{--c:var(--s-cancelled);--cb:var(--s-cancelled-bg)}
+.pill[data-s="confirmed"]{--c:var(--s-confirmed);--cb:var(--s-confirmed-bg)}
+.pill[data-s="arrived"]{--c:var(--s-arrived);--cb:var(--s-arrived-bg)}
+.flag{font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.flag.warn{color:var(--amber)}
+.flag.bad{color:var(--danger)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.chip svg{width:14px;height:14px}
+.chip.ok{color:var(--ok);background:var(--ok-soft)}
+.chip.wait{color:var(--amber);background:var(--amber-soft)}
+.chip.na{color:var(--muted);font-weight:500;padding-inline:0}
+
+.empty{padding:48px 20px;text-align:center;display:grid;gap:10px;justify-items:center}
+.empty h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:18px;text-wrap:balance}
+.empty p{margin:0;color:var(--muted);max-width:44ch}
+.loading-row{padding:28px 16px;color:var(--muted);text-align:center}
+.list-note{padding:8px 16px;font-size:12px;color:var(--muted);background:var(--surface-2);border-top:1px solid var(--line)}
+
+/* ---------- overlay: drawer & modal ---------- */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:50}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(540px,100%);background:var(--surface);z-index:51;overflow-y:auto;box-shadow:var(--shadow-2);
+  padding-top:calc(env(safe-area-inset-top,0px) + 14px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 28px);
+  padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:20px;display:flex;flex-direction:column;gap:16px}
+@media (max-width:540px){.drawer{padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:max(16px,env(safe-area-inset-left,0px))}}
+.dw-head{display:flex;align-items:center;gap:10px}
+.dw-head .code{color:var(--muted);font-size:12.5px}
+.dw-head .sp{flex:1}
+.dw-title h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:23px;line-height:1.3;text-wrap:balance}
+.dw-title p{margin:4px 0 0;color:var(--ink-2)}
+.dw-title .flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.dw-actions{display:flex;flex-wrap:wrap;gap:8px}
+.panel{border:1px solid var(--line-2);border-radius:var(--r-md);padding:14px;display:grid;gap:12px;background:var(--surface-2)}
+.panel h4{margin:0;font-size:14px;font-weight:600}
+.panel .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel .btns{display:flex;gap:8px;flex-wrap:wrap}
+.facts{margin:0;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.facts > div{padding:11px 0;border-bottom:1px solid var(--line);min-width:0;padding-inline-end:12px}
+.facts > div.full{grid-column:1/-1}
+.facts dt{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.02em;margin-bottom:3px}
+.facts dd{margin:0;overflow-wrap:anywhere}
+.facts dd .plan{display:block}
+.facts dd .act{display:block;font-size:12.5px;color:var(--ink-2)}
+.facts dd .act.late{color:var(--danger)}
+.sec-h{margin:4px 0 0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.03em}
+.hist{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.hist li{display:grid;grid-template-columns:14px 1fr;gap:10px;padding-bottom:12px;position:relative}
+.hist li::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--line-2);margin-top:6px;justify-self:center;position:relative;z-index:1}
+.hist li::after{content:"";position:absolute;top:16px;bottom:0;inset-inline-start:6px;width:1px;background:var(--line)}
+.hist li:last-child::after{display:none}
+.hist li[data-t="received"]::before{background:var(--s-received)}
+.hist li[data-t="delivered"]::before{background:var(--s-delivered)}
+.hist li[data-t="postponed"]::before{background:var(--s-postponed)}
+.hist li[data-t="noshow"]::before,.hist li[data-t="cancelled"]::before{background:var(--s-noshow)}
+.hist li[data-t="mfg_on"]::before{background:var(--amber)}
+.hist li[data-t="confirmed"]::before{background:var(--s-confirmed)}
+.hist li[data-t="arrived"]::before{background:var(--s-arrived)}
+.hist li[data-t="wa"]::before{background:var(--wa)}
+.hist .h-t{font-weight:600;font-size:13.5px}
+.hist .h-m{font-size:12px;color:var(--muted)}
+.hist .h-n{font-size:13px;color:var(--ink-2);margin-top:2px;overflow-wrap:anywhere}
+.others{display:grid;gap:4px}
+.others button{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:7px 10px;font-size:13px;text-align:start}
+.others button:hover{border-color:var(--line-2)}
+.dw-foot{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px;margin-top:auto}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:var(--r-sm);background:var(--danger-soft);font-size:13px;width:100%}
+
+.modal{position:fixed;z-index:51;top:50%;left:50%;transform:translate(-50%,-50%);width:min(780px,calc(100% - 32px));max-height:calc(100% - 48px);background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-2);display:flex;flex-direction:column;overflow:hidden}
+@media (max-width:640px){.modal{inset:0;transform:none;width:100%;max-height:none;height:100%;border-radius:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
+.m-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.m-head h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:18px}
+.m-body{padding:18px 20px;overflow-y:auto;flex:1;min-height:0}
+.m-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--line);background:var(--surface-2)}
+.m-foot .sp{flex:1}
+@media (max-width:640px){.m-head,.m-body,.m-foot{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+
+/* ---------- forms ---------- */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.f{display:grid;gap:5px;min-width:0;align-content:start}
+.f.full{grid-column:1/-1}
+.f > label,.f > .lbl{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.f .req{color:var(--danger)}
+.f input[type="text"],.f input[type="tel"],.f input[type="number"],.f input[type="date"],.f input[type="time"],.f input[type="datetime-local"],.f input[type="search"],.f select,.f textarea,
+.panel input,.panel select,.panel textarea{width:100%;min-height:40px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:7px 10px;font-size:14px}
+.f textarea,.panel textarea{min-height:76px;resize:vertical}
+.f input:focus,.f select:focus,.f textarea:focus,.panel input:focus,.panel textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.f .hint{font-size:12px;color:var(--muted)}
+.f .hint.warn{color:var(--amber)}
+.f .hint.bad{color:var(--danger)}
+.pair{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
+.check{display:flex;align-items:center;gap:8px;min-height:40px;font-size:14px}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.form-err{grid-column:1/-1;margin:0;padding:8px 12px;border-radius:var(--r-sm);background:var(--danger-soft);color:var(--danger);font-size:13px;font-weight:600}
+input[dir="ltr"]{text-align:right}
+
+/* ---------- settings ---------- */
+.tabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 12px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
+.set-sec{display:grid;gap:12px}
+.set-sec > p{margin:0;color:var(--muted);font-size:13px;max-width:70ch}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.lrow input[type="text"],.lrow select{min-height:38px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:6px 10px;width:100%}
+.lrow.fld{grid-template-columns:minmax(0,1.3fr) 130px minmax(0,1.2fr) auto auto}
+.lrow.typ{grid-template-columns:minmax(0,1fr) 190px auto auto}
+@media (max-width:640px){.lrow.typ{grid-template-columns:minmax(0,1fr) auto}.lrow.typ input[type="text"]{grid-column:1;grid-row:1}.lrow.typ .btn{grid-column:2;grid-row:1}.lrow.typ select{grid-column:1/-1;grid-row:2}.lrow.typ .check{grid-column:1/-1;grid-row:3;min-height:30px}}
+.lrow .lim{font-size:13px;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.lrow .lim input{width:72px;min-height:38px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:6px 8px;text-align:center}
+@media (max-width:640px){.lrow.fld{grid-template-columns:1fr 1fr}.lrow.fld .opt{grid-column:1/-1}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 10px;border-radius:999px;background:var(--sunk);font-size:13px}
+.chips button{border:0;background:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.chips button:hover{background:var(--line)}
+.chips svg{width:12px;height:12px}
+.addline{display:flex;gap:8px}
+.addline input{flex:1;min-height:38px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:6px 10px;min-width:0}
+.matrix-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-md)}
+.matrix{border-collapse:collapse;width:100%;min-width:760px;font-size:12.5px}
+.matrix th,.matrix td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+.matrix thead th{background:var(--surface-2);font-weight:600;color:var(--ink-2);line-height:1.35}
+.matrix th:first-child,.matrix td:first-child{text-align:start;position:sticky;right:0;background:var(--surface);min-width:150px}
+.matrix thead th:first-child{background:var(--surface-2)}
+.matrix tr:last-child td{border-bottom:0}
+.matrix td input[type="text"]{width:100%;min-height:34px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:4px 8px}
+.matrix input[type="checkbox"]{width:17px;height:17px;accent-color:var(--accent)}
+.urow{display:grid;grid-template-columns:minmax(0,1fr) 170px auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.urow .who{display:flex;align-items:center;gap:8px;min-width:0}
+.urow .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.urow select{min-height:36px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:4px 8px;width:100%}
+.tag{font-size:11px;padding:1px 6px;border-radius:4px;background:var(--sunk);color:var(--ink-2);font-weight:600}
+@media (max-width:540px){.urow{grid-template-columns:1fr auto}.urow select{grid-column:1/-1;grid-row:2}}
+
+/* ---------- view nav ---------- */
+.nav-in{max-width:1240px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:4px;margin-top:-4px}
+.nav-in button{display:inline-flex;align-items:center;gap:7px;padding:8px 12px 10px;border:0;background:none;font-weight:600;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent}
+.nav-in button:hover{color:var(--ink)}
+.nav-in button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--danger-soft);color:var(--danger);font-size:11.5px;font-weight:700;display:inline-grid;place-items:center;font-variant-numeric:tabular-nums}
+#viewBookings{display:grid;gap:16px}
+
+/* ---------- multi-select ---------- */
+.ms{position:relative}
+.ms-btn{width:100%;min-height:40px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:5px 10px 5px 32px;text-align:start;position:relative;font-size:14px}
+.ms-btn::after{content:"";position:absolute;left:13px;top:50%;width:7px;height:7px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:translateY(-70%) rotate(45deg)}
+.ms-btn[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ms-btn .ph-txt{color:var(--muted)}
+.ms-tag{display:inline-flex;align-items:center;padding:1px 9px;border-radius:999px;background:var(--accent-soft);color:var(--ink);font-size:12.5px;font-weight:600}
+.ms-pop{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm);box-shadow:var(--shadow-2);padding:6px;display:grid;gap:2px;max-height:260px;overflow:auto}
+.ms-pop label{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:4px;font-size:14px;cursor:pointer}
+.ms-gh{font-size:11.5px;font-weight:600;color:var(--muted);padding:10px 10px 2px;letter-spacing:.02em;border-top:1px solid var(--line);margin-top:2px}
+.ms-pop > .ms-gh:first-child{border-top:0;margin-top:0;padding-top:4px}
+.ms-rest{display:grid;gap:2px}
+.ms-more{border:0;border-top:1px solid var(--line);background:none;color:var(--accent);font-weight:600;font-size:13px;padding:10px;text-align:start;margin-top:2px}
+.ms-more:hover{text-decoration:underline}
+.ms-pop label:hover{background:var(--surface-2)}
+.ms-pop input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.ms-pop .cap{margin-inline-start:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ms-pop .cap.full{color:var(--danger);font-weight:600}
+.ms.bad .ms-btn{border-color:var(--danger)}
+.approve-box{grid-column:1/-1;padding:10px 12px;border-radius:var(--r-sm);background:var(--amber-soft);color:var(--ink);font-size:13px;display:grid;gap:3px}
+.approve-box b{font-weight:600;color:var(--amber)}
+
+/* ---------- department dashboard ---------- */
+.dash{display:grid;gap:16px}
+.dash-head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
+.dash-head h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:21px}
+.dash-head p{margin:4px 0 0;color:var(--muted);font-size:13px;max-width:64ch}
+.dash-ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dash-range{font-weight:600;font-size:13.5px;min-width:128px;text-align:center;font-variant-numeric:tabular-nums}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;display:grid;gap:4px;align-content:start;min-width:0}
+.kpi b{font-family:var(--f-display);font-weight:600;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi b.txt{font-size:18px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi span{font-size:12.5px;color:var(--ink-2)}
+.kpi.warn b{color:var(--amber)}
+.kpi.bad b{color:var(--danger)}
+.heat-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow-x:auto}
+.heat{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px}
+.heat th,.heat td{padding:4px;border-bottom:1px solid var(--line);text-align:center}
+.heat tbody tr:last-child th,.heat tbody tr:last-child td{border-bottom:0}
+.heat thead th{padding:8px 4px;background:var(--surface-2);font-weight:600;color:var(--muted);min-width:58px}
+.heat thead th span{display:block;font-size:11px;white-space:nowrap}
+.heat thead th b{display:block;font-family:var(--f-display);font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+.heat thead th.today b{color:var(--accent)}
+.heat th:first-child{position:sticky;right:0;z-index:1;background:var(--surface);text-align:start;padding-inline:14px 10px;min-width:148px;border-left:1px solid var(--line)}
+.heat thead th:first-child{background:var(--surface-2)}
+.heat tbody th span{display:block;font-weight:600;color:var(--ink)}
+.heat tbody th small{color:var(--muted);font-size:11.5px;font-weight:500}
+.hc{width:100%;min-height:52px;border:0;border-radius:var(--r-sm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:color-mix(in srgb,var(--accent) var(--mix,0%),var(--surface));color:var(--ink);font-variant-numeric:tabular-nums;padding:4px 2px}
+.hc:hover{outline:1.5px solid var(--ink-2);outline-offset:-1.5px}
+.hc b{font-family:var(--f-display);font-weight:600;font-size:16px;line-height:1.1}
+.hc.zero b{color:var(--line-2)}
+.hc i{font-style:normal;font-size:10.5px;font-weight:700;white-space:nowrap}
+.hc em{font-style:normal;font-size:10px;font-weight:600;color:var(--danger);white-space:nowrap}
+.hc.full{background:var(--amber-soft);color:var(--amber)}
+.hc.over{background:var(--danger-soft);color:var(--danger)}
+.hc.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg{width:14px;height:14px;border-radius:3px;display:inline-block}
+.lg.some{background:color-mix(in srgb,var(--accent) 22%,var(--surface));border:1px solid var(--line)}
+.lg.full{background:var(--amber-soft);border:1px solid var(--amber)}
+.lg.over{background:var(--danger-soft);border:1px solid var(--danger)}
+.dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;min-width:0}
+.card h3{margin:0;padding:12px 16px;font-size:14px;font-weight:600;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;background:var(--surface-2)}
+.card h3 span{font-variant-numeric:tabular-nums;color:var(--muted)}
+.card-empty{margin:0;padding:22px 16px;color:var(--muted);font-size:13px;text-align:center}
+.fd{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;width:100%;padding:10px 16px;border:0;border-bottom:1px solid var(--line);background:var(--surface);text-align:start}
+.fd:last-child{border-bottom:0}
+.fd:hover{background:var(--surface-2)}
+.fd-d{display:flex;flex-direction:column;line-height:1.3}
+.fd-d b{font-weight:600}
+.fd-d small{color:var(--muted);font-size:12px}
+.fd-t{display:flex;flex-wrap:wrap;gap:4px 6px}
+.ap{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+.ap:last-child{border-bottom:0}
+.ap-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;background:none;padding:0;text-align:start}
+.ap-main b{font-weight:600}
+.ap-main small{color:var(--muted);font-size:12px}
+.ap-main small.bad{color:var(--danger);font-weight:600}
+.ap-act{display:flex;gap:6px;flex:none}
+@media (max-width:860px){.dash-cols{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.ap{flex-wrap:wrap}.ap-act{width:100%}.dash-range{min-width:0}}
+
+/* ---------- CEO dashboard ---------- */
+.exec{display:grid;gap:16px}
+.ex-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ex-kpis .kpi.hero{grid-column:span 2}
+.ex-kpis .kpi .kl{font-size:12.5px;color:var(--ink-2)}
+.ex-kpis .kpi b.big{font-size:52px;line-height:1.05}
+.ex-kpis .kpi small.of{color:var(--muted);font-size:12px}
+.kpi .dl{font-size:12px;font-weight:600;color:var(--muted)}
+.kpi .dl.good{color:var(--ok)}
+.kpi .dl.bad{color:var(--danger)}
+.kpi .dl small{font-weight:500;color:var(--muted)}
+.ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.ex-grid.w{grid-template-columns:1fr 1.45fr}
+.card-b{padding:14px 16px}
+.card h3 .hint{font-weight:500}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-2);padding:12px 16px 0}
+.legend2 span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.ex-chart{padding:6px 10px 10px}
+.ex-svg{display:block;width:100%;height:auto;direction:ltr}
+.ex-svg .gl{stroke:var(--line);stroke-width:1}
+.ex-svg .bl{stroke:var(--line-2);stroke-width:1}
+.ex-svg text{font-family:var(--f-body);font-variant-numeric:tabular-nums}
+.ex-svg .tk{fill:var(--muted);font-size:11px}
+.ex-svg .xl{fill:var(--muted);font-size:10.5px}
+.ex-svg .xl.today{fill:var(--ink);font-weight:600}
+.ex-svg .hit{fill:var(--ink);fill-opacity:0;cursor:default}
+.ex-svg .hit:hover{fill-opacity:.05}
+.s-del{fill:var(--c-del)}.s-in{fill:var(--c-in)}.s-up{fill:var(--c-up)}.s-ns{fill:var(--c-ns)}.s-off{fill:var(--c-off)}
+.hb{display:grid;gap:12px}
+.hb-row{display:grid;grid-template-columns:minmax(84px,150px) minmax(0,1fr) auto;gap:10px;align-items:center}
+.hb-l{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb-t{height:12px;display:flex}
+.hb-t i{display:block;height:100%;background:var(--series-1);border-start-end-radius:4px;border-end-end-radius:4px}
+.hb-v{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;display:inline-flex;align-items:baseline;gap:8px}
+.hb-v small{font-weight:500;color:var(--muted);font-size:12px}
+.tbl-wrap{overflow-x:auto}
+.ex-tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:540px}
+.ex-tbl th,.ex-tbl td{padding:9px 14px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+.ex-tbl thead th{font-size:11.5px;color:var(--muted);font-weight:600;background:var(--surface-2)}
+.ex-tbl td{font-variant-numeric:tabular-nums}
+.ex-tbl tbody th{font-weight:500}
+.ex-tbl tr:last-child th,.ex-tbl tr:last-child td{border-bottom:0}
+.ex-tbl .who{display:flex;align-items:center;gap:8px}
+.cellbar{display:flex;align-items:center;gap:8px;min-width:120px}
+.cellbar b{min-width:22px}
+.cellbar i{display:block;height:8px;background:var(--series-1);border-start-end-radius:4px;border-end-end-radius:4px}
+.tip{position:fixed;z-index:65;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-sm);box-shadow:var(--shadow-2);padding:8px 10px;font-size:12.5px;min-width:160px;display:grid;gap:3px}
+.tip b{font-weight:600}
+.tip .tr{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.tip .tr span{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:900px){.ex-grid,.ex-grid.w{grid-template-columns:1fr}.ex-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- whatsapp ---------- */
+a.btn{text-decoration:none}
+.btn.wa{color:var(--wa)}
+.btn.wa-go{background:var(--wa);border-color:var(--wa);color:var(--wa-ink)}
+.btn.wa-go:hover{background:var(--wa);border-color:var(--wa);filter:brightness(1.08)}
+.phl{display:flex;align-items:center;gap:6px}
+.wa-ic{width:26px;height:26px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--wa);display:inline-grid;place-items:center;flex:none}
+.wa-ic:hover{border-color:var(--wa)}
+.wa-ic svg{width:15px;height:15px}
+.tpls{display:flex;flex-wrap:wrap;gap:6px}
+.tpl{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.tpl.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.panel textarea#waText{min-height:120px;line-height:1.7}
+.tpl-row{display:grid;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}
+.tpl-top{display:flex;gap:8px;align-items:center}
+.tpl-top input{flex:1;min-height:38px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:6px 10px;min-width:0;font-weight:600}
+.tpl-row textarea{width:100%;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:8px 10px;resize:vertical;min-height:78px;line-height:1.7}
+.ph-keys span{padding:3px 10px;font-size:12.5px}
+
+/* ---------- files ---------- */
+.files{display:grid;gap:6px;margin-top:4px}
+.file{display:flex;align-items:center;gap:10px;padding:6px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);min-width:0}
+.thumb{width:48px;height:48px;padding:0;border:0;border-radius:4px;overflow:hidden;background:var(--sunk);flex:none;cursor:zoom-in}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ficon{width:48px;height:48px;border-radius:4px;background:var(--danger-soft);color:var(--danger);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;font-family:var(--f-mono)}
+.fmeta{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.fmeta b{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fmeta small{color:var(--muted);font-size:11.5px}
+.fact{display:flex;gap:10px;flex:none;align-items:center}
+.fact a{color:var(--accent);font-weight:600;font-size:12.5px;text-decoration:none}
+.fact a:hover{text-decoration:underline}
+.link.danger{color:var(--danger)}
+.f input[type="file"],.panel input[type="file"]{font-size:13px;padding:8px;border:1px dashed var(--line-2);border-radius:var(--r-sm);background:var(--surface);width:100%;min-height:0}
+.panel input[type="radio"],.panel input[type="checkbox"]{width:18px;height:18px;min-height:0;padding:0;accent-color:var(--accent)}
+.radios{display:flex;flex-wrap:wrap;gap:2px 18px}
+.lightbox{position:fixed;inset:0;z-index:70;background:var(--scrim);display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 56px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 24px) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;border-radius:var(--r-sm);box-shadow:var(--shadow-2);background:var(--surface)}
+.lightbox .btn{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:max(16px,env(safe-area-inset-left,0px))}
+.set-sub{display:grid;gap:10px;padding-top:16px;margin-top:4px;border-top:1px solid var(--line)}
+.set-sub h4{margin:0;font-size:14px;font-weight:600}
+.set-sub > p{margin:0;color:var(--muted);font-size:13px;max-width:70ch}
+
+/* ---------- toasts ---------- */
+.toasts{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);display:grid;gap:8px;width:min(460px,calc(100% - 32px))}
+.toast{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--r-sm);background:var(--ink);color:var(--surface);box-shadow:var(--shadow-2);font-size:13.5px}
+.toast.err{background:var(--danger);color:var(--surface)}
+.toast span{flex:1}
+.toast button{border:0;background:none;color:inherit;font-weight:700;text-decoration:underline;padding:0}
+
+/* ---------- responsive ---------- */
+@media (max-width:1060px){
+  .thead,.row{grid-template-columns:70px minmax(140px,1.3fr) minmax(130px,1.2fr) 124px 140px 128px}
+  .c-by,.thead .h-by{display:none}
+}
+@media (max-width:820px){
+  .datebar{grid-template-columns:1fr}
+  .date-nav{justify-content:space-between}
+  .thead{display:none}
+  .row{grid-template-columns:58px minmax(0,1fr) auto;grid-template-areas:"time cust st" "time car car" "time mfg act";gap:6px 12px;align-items:start;padding-block:12px}
+  .c-time{grid-area:time;flex-direction:column;align-items:flex-start;gap:0}
+  .c-cust{grid-area:cust}.c-car{grid-area:car}.c-mfg{grid-area:mfg;align-self:center}.c-st{grid-area:st;justify-content:flex-end}.c-act{grid-area:act}
+  .grp{padding-inline:16px}
+}
+@media (max-width:640px){
+  .form-grid{grid-template-columns:1fr}
+  .facts{grid-template-columns:1fr}
+  .panel .row2{grid-template-columns:1fr}
+  .tools{flex-basis:100%}
+  .search{max-width:none}
+  .top-actions{width:100%}
+  .top-actions .user-chip{flex:1;min-width:0}
+  #btnSettings span{display:none}
+  .stats{flex-wrap:nowrap;overflow-x:auto;margin-inline:-4px;padding-inline:4px;scrollbar-width:none}
+  .stat{flex:none}
+  .ribbon{gap:4px}
+  .day{padding:6px 5px 7px}
+  .day.today .dn::after{content:""}
+  .day.today{box-shadow:inset 0 -2px 0 var(--accent)}
+  .day.sel.today{box-shadow:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- sign-in gate ---------- */
+.gate{position:fixed;inset:0;z-index:90;background:var(--bg);display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));overflow:auto}
+.gate-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:28px 24px;display:grid;gap:16px;text-align:center;box-shadow:var(--shadow-1)}
+.gate-card h1{margin:0;font-family:var(--f-display);font-size:22px;font-weight:600}
+.gate [data-g]{display:grid;gap:14px;justify-items:center}
+.gate [data-g][hidden]{display:none!important}
+.gate p{margin:0;color:var(--ink-2);font-size:14px;line-height:1.75}
+.gate .g-email{font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate;color:var(--ink)}
+.gate .btn{min-width:200px}
+</style>
+</head>
+<body>
+<div class="app" dir="rtl" lang="ar">
+  <header class="top">
+    <div class="top-in">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"><span id="markMonth"></span><b id="markDay"></b></div>
+        <div><h1>Obour Branch Booking</h1><p id="branchLine"></p></div>
+      </div>
+      <div class="top-actions">
+        <div id="userChip" class="user-chip" hidden></div>
+        <button id="btnSettings" class="btn" hidden type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h8M15 6h2M3 14h2M9 14h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/><circle cx="13" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="7" cy="14" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg><span>الإعدادات</span></button>
+        <button id="btnLogout" class="btn ghost" type="button" hidden>خروج</button>
+        <button id="btnNew" class="btn primary" hidden type="button" data-new="1"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/></svg><span>حجز جديد</span></button>
+      </div>
+    </div>
+    <nav class="nav-in" id="viewNav" aria-label="العرض">
+      <button type="button" data-view="bookings">الحجوزات</button>
+      <button type="button" data-view="dashboard">لوحة الأقسام <span class="badge" id="navBadge" hidden></span></button>
+      <button type="button" data-view="executive" id="navExec" hidden>لوحة الإدارة</button>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div id="banner"></div>
+
+    <div id="viewBookings">
+    <section class="datebar" aria-label="اختيار اليوم">
+      <div class="date-nav">
+        <button id="prevDay" class="btn icon ghost" type="button" aria-label="اليوم السابق"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="date-title"><span id="selDayName"></span><strong id="selDate"></strong></div>
+        <button id="nextDay" class="btn icon ghost" type="button" aria-label="اليوم التالي"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button id="btnToday" class="btn sm" type="button">اليوم</button>
+        <label class="date-pick"><span class="sr">اختر تاريخ</span><input type="date" id="datePick"></label>
+      </div>
+      <div id="ribbon" class="ribbon"></div>
+    </section>
+
+    <section id="stats" class="stats" aria-label="ملخص الحالات"></section>
+
+    <section class="toolbar">
+      <div class="seg" id="scopeSeg" role="tablist" aria-label="نطاق العرض">
+        <button type="button" data-scope="day">اليوم المحدد</button>
+        <button type="button" data-scope="week">الأسبوع</button>
+        <button type="button" data-scope="all">كل الحجوزات</button>
+      </div>
+      <div class="tools">
+        <label class="search"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M13.2 13.2L17 17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="sr">بحث</span><input id="q" type="search" placeholder="ابحث بالاسم أو التليفون أو السيارة أو رقم الحجز" autocomplete="off"></label>
+        <select id="deptFilter" aria-label="القسم"></select>
+        <select id="typeFilter" aria-label="نوع الحجز"></select>
+        <button id="btnExport" class="btn" type="button" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9M6 8.5L10 12.5 14 8.5M4 15.5h12" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>تصدير Excel</button>
+      </div>
+    </section>
+
+    <section id="list" class="list" aria-live="polite"></section>
+    </div>
+    <section id="viewDash" class="dash" hidden></section>
+    <section id="viewExec" class="exec" hidden></section>
+  </main>
+
+  <div id="drawerWrap" hidden>
+    <div class="scrim" data-close="drawer"></div>
+    <aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-label="تفاصيل الحجز"></aside>
+  </div>
+  <div id="modalWrap" hidden>
+    <div class="scrim" data-close="modal"></div>
+    <div id="modal" class="modal" role="dialog" aria-modal="true"></div>
+  </div>
+  <div id="lightbox" class="lightbox" hidden data-close="lightbox"><button type="button" class="btn icon" data-close="lightbox" aria-label="إغلاق"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><img id="lbImg" alt="صورة المرفق"></div>
+  <div id="tip" class="tip" role="tooltip" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+</div>
+
+
+<div id="gate" class="gate" dir="rtl" lang="ar">
+  <div class="gate-card">
+    <h1>Obour Branch Booking</h1>
+    <div data-g="loading"><p>جارٍ التحميل…</p></div>
+    <div data-g="signin" hidden><p>سجّل دخول بحساب Google بتاع الشركة.</p><button id="gSignIn" class="btn primary" type="button">الدخول بحساب Google</button></div>
+    <div data-g="waiting" hidden><p>دخلت بـ <span class="g-email"></span><br>حسابك لسه ما اتحددلوش دور. اطلب من مدير الأداة يحدد دورك، والصفحة هتفتح لوحدها أول ما يحدده.</p><button class="btn" type="button" data-signout>الدخول بحساب تاني</button></div>
+    <div data-g="error" hidden><p id="gErrMsg"></p><button class="btn" type="button" onclick="location.reload()">إعادة المحاولة</button></div>
+  </div>
+</div>
+
+<script>
+window.STANDALONE=true;
+(function(){var res;var ready=new Promise(function(r){res=r;});window.__capsReady=res;window.claude={use:function(n){return ready.then(function(c){return (c&&c[n])||null;});}};})();
+</script>
+<script src="firebase-config.js"></script>
+<script src="seed-config.js"></script>
+<script type="module" src="shim.js"></script>
+<script>
+document.documentElement.setAttribute('dir','rtl');
+document.documentElement.setAttribute('lang','ar');
+
+/* ================= helpers ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parseYmd=s=>{const p=String(s).split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);};
+const addDays=(s,n)=>{const d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d);};
+const daysBetween=(a,b)=>Math.round((parseYmd(b)-parseYmd(a))/864e5);
+const todayStr=()=>ymd(new Date());
+const LOC='ar-EG-u-nu-latn';
+const fDay=new Intl.DateTimeFormat(LOC,{weekday:'long'});
+const fDM=new Intl.DateTimeFormat(LOC,{day:'numeric',month:'long'});
+const fMonth=new Intl.DateTimeFormat(LOC,{month:'long'});
+const fFull=new Intl.DateTimeFormat(LOC,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const dayName=s=>fDay.format(parseYmd(s));
+const dm=s=>fDM.format(parseYmd(s));
+function splitTime(hhmm){if(!hhmm)return null;const p=hhmm.split(':').map(Number);return {t:(p[0]%12||12)+':'+pad(p[1]),ap:p[0]<12?'ص':'م'};}
+function fmtTime(hhmm){const s=splitTime(hhmm);return s?s.t+' '+s.ap:'';}
+function hhmmOf(d){return pad(d.getHours())+':'+pad(d.getMinutes());}
+function fmtStamp(iso){if(!iso)return '';const d=new Date(iso);return dayName(ymd(d))+' '+fDM.format(d)+' · '+fmtTime(hhmmOf(d));}
+function nowLocal(){const d=new Date();return ymd(d)+'T'+hhmmOf(d);}
+function weekStart(s){const d=parseYmd(s);d.setDate(d.getDate()-((d.getDay()+1)%7));return ymd(d);}
+const rid=(p)=>p+Math.random().toString(36).slice(2,8);
+function makeCode(date){const c='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<3;i++)r+=c[Math.floor(Math.random()*c.length)];return String(date||todayStr()).slice(5).replace('-','')+'-'+r;}
+function norm(s){return String(s||'').toLowerCase().replace(/[ً-ْـ]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\s+/g,' ').trim();}
+function normPhone(s){return String(s||'').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[^\d+]/g,'');}
+
+const IC={
+  check:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  clock:'<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M10 6.5V10l2.5 1.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg>',
+  x:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  chat:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5a6.5 6.5 0 0 0-5.6 9.8L3.5 16.5l3.3-.9A6.5 6.5 0 1 0 10 3.5z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg>',
+  plus:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/></svg>'
+};
+
+/* ================= model ================= */
+const PERMS=[
+  ['create','إضافة حجز'],
+  ['editAll','تعديل أي حجز'],
+  ['editOwn','تعديل حجوزاته فقط'],
+  ['status','تحديث الحالة (استلام / تأجيل / تسليم)'],
+  ['cancel','إلغاء الحجز'],
+  ['mfg','تأكيد طلب التصنيع'],
+  ['approve','الموافقة على الحجز فوق الطاقة'],
+  ['delete','حذف نهائي'],
+  ['export','تصدير Excel'],
+  ['settings','الإعدادات والمستخدمين'],
+  ['ceoDash','لوحة الإدارة (CEO)']
+];
+const allPerms=()=>Object.fromEntries(PERMS.map(p=>[p[0],true]));
+const DEFAULT_CONFIG={
+  branchName:'',
+  receiveFlow:{workOrderField:'',reportField:'',requireReport:false},
+  waTemplates:[
+    {id:'confirm',name:'تأكيد الحجز',text:'أهلًا أ/ {الاسم}،\nتم تأكيد حجزك في {الفرع} يوم {اليوم} {التاريخ} الساعة {الوقت}.\nالسيارة: {السيارة}\nالخدمة: {نوع_الحجز}\nرقم الحجز: {رقم_الحجز}\nفي انتظارك.'},
+    {id:'remind',name:'تذكير بالميعاد',text:'صباح الخير أ/ {الاسم}،\nبنفكّر حضرتك بميعادك النهارده الساعة {الوقت} في {الفرع} ({نوع_الحجز}).\nياريت تأكد حضورك بالرد على الرسالة دي.\nرقم الحجز: {رقم_الحجز}'},
+    {id:'ready',name:'العربية جاهزة',text:'أ/ {الاسم}،\nعربيتك {السيارة} جاهزة للاستلام من {الفرع}.\nرقم أمر الشغل: {أمر_الشغل}\nنورتنا.'},
+    {id:'resched',name:'تحديد ميعاد جديد',text:'أهلًا أ/ {الاسم}،\nحابين نحدد ميعاد جديد لحجزك ({نوع_الحجز}) لعربية {السيارة}.\nياريت تبلغنا باليوم والوقت المناسبين لحضرتك.'}
+  ],
+  deptLimit:4,
+  departments:[
+    {id:'upholstery',name:'التنجيد والفرش',limit:4},
+    {id:'electronics',name:'الإلكترونيات والصوتيات',limit:4},
+    {id:'film',name:'الفيلم والحماية',limit:4},
+    {id:'accessories',name:'الإكسسوارات',limit:4}
+  ],
+  defaultRole:'viewer',
+  bookingTypes:[
+    {id:'install',name:'تركيب',needsMfg:false},
+    {id:'mfg',name:'تصنيع وتركيب',needsMfg:true},
+    {id:'inspect',name:'معاينة',needsMfg:false},
+    {id:'warranty',name:'صيانة / ضمان',needsMfg:false}
+  ],
+  carTypes:[],
+  customFields:[],
+  roleOrder:['admin','ceo','salesManager','sales','operation','viewer'],
+  roles:{
+    admin:{name:'مدير النظام',perms:allPerms()},
+    ceo:{name:'CEO',perms:allPerms()},
+    salesManager:{name:'Sales Manager',perms:{create:true,editAll:true,cancel:true,approve:true,export:true}},
+    sales:{name:'Sales',perms:{create:true}},
+    operation:{name:'Operation',perms:{status:true,mfg:true}},
+    viewer:{name:'متابعة فقط',perms:{}}
+  }
+};
+const STATUS={confirmed:'أكد الحضور',arrived:'وصل العميل',booked:'محجوز',postponed:'مؤجل',received:'تم الاستلام',ready:'جاهزة للتسليم',delivered:'تم التسليم',noshow:'لم يحضر',cancelled:'ملغي'};
+const CLOSED=['delivered','noshow','cancelled'];
+const GROUPS=[
+  {k:'all',label:'الكل',test:()=>true},
+  {k:'unconf',label:'لم يؤكد بعد',dot:'var(--s-booked)',test:b=>b.status==='booked'||(b.status==='postponed'&&!b.noDate)},
+  {k:'confirmed',label:'أكد الحضور',dot:'var(--s-confirmed)',test:b=>b.status==='confirmed'},
+  {k:'arrived',label:'بانتظار أمر الشغل',dot:'var(--s-arrived)',opt:1,test:b=>b.status==='arrived'},
+  {k:'inside',label:'داخل الفرع',dot:'var(--s-received)',test:b=>b.status==='received'||b.status==='ready'},
+  {k:'delivered',label:'تم التسليم',dot:'var(--s-delivered)',test:b=>b.status==='delivered'},
+  {k:'apolog',label:'اعتذر — بدون موعد',dot:'var(--s-postponed)',opt:1,test:b=>b.status==='postponed'&&!!b.noDate},
+  {k:'postponed',label:'تم تأجيلها',dot:'var(--s-postponed)',opt:1,test:b=>(b.postponeCount||0)>0&&!CLOSED.includes(b.status)&&!b.noDate},
+  {k:'noshow',label:'لم يحضر',dot:'var(--s-noshow)',opt:1,test:b=>b.status==='noshow'},
+  {k:'cancelled',label:'ملغي',dot:'var(--s-cancelled)',opt:1,test:b=>b.status==='cancelled'},
+  {k:'approval',label:'بانتظار الموافقة',dot:'var(--danger)',opt:1,test:b=>isPending(b)},
+  {k:'mfg',label:'بانتظار تأكيد التصنيع',dot:'var(--amber)',opt:1,test:b=>needsMfg(b)&&!b.mfgConfirmed&&!CLOSED.includes(b.status)}
+];
+const HIST={created:'تم إنشاء الحجز',edited:'تعديل بيانات الحجز',received:'تم استلام السيارة',ready:'السيارة جاهزة للتسليم',delivered:'تم تسليم السيارة للعميل',postponed:'تأجيل الموعد',noshow:'العميل لم يحضر',cancelled:'إلغاء الحجز',reopened:'إعادة فتح الحجز',mfg_on:'تأكيد طلب التصنيع',mfg_off:'إلغاء تأكيد التصنيع',note:'ملاحظة',approval_req:'طلب موافقة — القسم ممتلئ',approved:'تمت الموافقة على الحجز',rejected:'رفض الحجز',confirmed:'العميل أكد الحضور',arrived:'وصل العميل — بانتظار أمر الشغل',attached:'إرفاق ملفات',file_removed:'إزالة ملف',wa:'فتح محادثة واتساب'};
+const ACT2HIST={receive:'received',ready:'ready',deliver:'delivered',postpone:'postponed',noshow:'noshow',cancel:'cancelled',reopen:'reopened',mfg_on:'mfg_on',mfg_off:'mfg_off',note:'note',approve:'approved',reject:'rejected',confirm:'confirmed',arrive:'arrived',attach:'attached'};
+const FIELD_LABELS={types:'نوع الحجز',departments:'القسم',customerName:'اسم العميل',phone:'رقم التليفون',date:'التاريخ',receiveTime:'وقت استلام السيارة',deliveryDate:'تاريخ التسليم',deliveryTime:'وقت التسليم',carType:'نوع السيارة',bookedBy:'القائم بالحجز',other:'أخرى',mfgConfirmed:'تأكيد طلب التصنيع'};
+
+const S={
+  db:null,user:null,dl:null,state:'loading',
+  me:{id:null,isOwner:false,canEdit:false,canWrite:null,view:null},
+  config:null,members:{},visitors:{},bookings:[],extra:{},bFirst:false,bConfirmed:false,bSlow:false,bErr:null,windowFull:false,
+  profiles:{},typeSig:'',
+  ui:{date:todayStr(),scope:'day',status:'all',type:'all',dept:'all',q:'',openId:null,act:null,confirmDel:false,form:null,set:null,view:'bookings',dash:{start:todayStr(),len:14}}
+};
+try{const sc=localStorage.getItem('bk_scope');if(['day','week','all'].includes(sc))S.ui.scope=sc;}catch(e){}
+try{const h=(location.hash||'').slice(1);if(h==='dashboard'||h==='executive')S.ui.view=h;}catch(e){}
+window.addEventListener('hashchange',()=>{const h=(location.hash||'').slice(1);const v=(h==='dashboard'||h==='executive')?h:'bookings';if(v!==S.ui.view){S.ui.view=v;renderAll();}});
+
+function cfg(){
+  const c=Object.assign({},DEFAULT_CONFIG,S.config||{});
+  if(!c.roles||!Object.keys(c.roles).length)c.roles=DEFAULT_CONFIG.roles;
+  if(!Array.isArray(c.roleOrder))c.roleOrder=Object.keys(c.roles);
+  c.roleOrder=c.roleOrder.filter(k=>c.roles[k]);
+  if(!c.roles.admin)c.roles=Object.assign({admin:{name:'مدير',perms:allPerms()}},c.roles);
+  if(!c.roleOrder.includes('admin'))c.roleOrder.unshift('admin');
+  if(!Array.isArray(c.bookingTypes))c.bookingTypes=[];
+  if(!Array.isArray(c.customFields))c.customFields=[];
+  if(!Array.isArray(c.carTypes))c.carTypes=[];
+  if(!Array.isArray(c.departments))c.departments=DEFAULT_CONFIG.departments;
+  if(!Array.isArray(c.waTemplates))c.waTemplates=DEFAULT_CONFIG.waTemplates;
+  c.receiveFlow=Object.assign({workOrderField:'',reportField:'',requireReport:false},c.receiveFlow||{});
+  return c;
+}
+function typesOf(b){return Array.isArray(b.types)?b.types:(b.type?[b.type]:[]);}
+function deptsOf(b){return Array.isArray(b.departments)?b.departments:[];}
+function typeNames(b){const c=cfg(),fb=b.typeNames||{};return typesOf(b).map(id=>{const t=c.bookingTypes.find(x=>x.id===id);return t?t.name:(fb[id]||b.typeName||'نوع محذوف');});}
+function typeName(b){const n=typeNames(b);return n.length?n.join(' + '):'—';}
+function typeDept(id){const c=cfg(),t=c.bookingTypes.find(x=>x.id===id);return t&&t.dept&&c.departments.some(d=>d.id===t.dept)?t.dept:'';}
+function deptName(id){const d=cfg().departments.find(x=>x.id===id);return d?d.name:'قسم محذوف';}
+function deptNames(b){const fb=b.deptNames||{};return deptsOf(b).map(id=>{const d=cfg().departments.find(x=>x.id===id);return d?d.name:(fb[id]||'قسم محذوف');});}
+function needsMfg(b){const c=cfg(),ts=typesOf(b);if(!ts.length)return !!b.typeNeedsMfg;return ts.some(id=>{const t=c.bookingTypes.find(x=>x.id===id);return t?!!t.needsMfg:!!b.typeNeedsMfg;});}
+function deptLimit(id){const d=cfg().departments.find(x=>x.id===id);return Math.max(1,parseInt(d&&d.limit,10)||parseInt(cfg().deptLimit,10)||4);}
+const counts=b=>b.status!=='cancelled'&&b.status!=='noshow'&&!(b.status==='postponed'&&b.noDate);
+const normDigits=s=>String(s==null?'':s).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+const DONE_RCV=['received','ready','delivered'];
+function woField(){const c=cfg(),id=c.receiveFlow.workOrderField;return c.customFields.find(x=>x.id===id&&(x.type==='text'||x.type==='number'))||null;}
+function rptField(){const c=cfg(),id=c.receiveFlow.reportField;return c.customFields.find(x=>x.id===id&&x.type==='file')||null;}
+function woLabel(){const f=woField();return f?f.label:'رقم أمر الشغل';}
+function rptLabel(){const f=rptField();return f?f.label:'محضر الاستلام';}
+function getWO(b){const f=woField();const v=f?(b.extra||{})[f.id]:b.workOrder;return v==null?'':String(v).trim();}
+function fileList(b,fid){const v=(b.extra||{})[fid];return Array.isArray(v)?v:[];}
+function getRpt(b){const f=rptField();const v=f?(b.extra||{})[f.id]:b.receiptReport;return Array.isArray(v)?v:[];}
+const fmtSize=n=>!n?'':n<1048576?Math.max(1,Math.round(n/1024))+' ك.ب':(n/1048576).toFixed(1)+' م.ب';
+const fileUrl=f=>f&&f.url?f.url:'/_blob/'+(f&&f.id);
+function filesHTML(list,opts){
+  opts=opts||{};
+  return `<div class="files">${list.map(f=>{const img=/^image\//.test(f.type||'');const src=fileUrl(f);const armed=S.ui.rmArm===f.id+'|'+opts.field;
+    return `<div class="file">${img?`<button type="button" class="thumb" data-view-img="${esc(f.id)}" aria-label="${esc('عرض '+(f.name||'الصورة'))}"><img src="${esc(src)}" alt="" loading="lazy"></button>`:'<span class="ficon" aria-hidden="true">PDF</span>'}<span class="fmeta"><b>${esc(f.name||'ملف')}</b><small>${esc(fmtSize(f.size))}${f.at?' · '+esc(fmtStamp(f.at)):''}</small></span><span class="fact"><a href="${esc(src)}" target="_blank" rel="noopener">فتح</a>${S.dl?`<button type="button" class="link" data-dl="${esc(f.id)}">تحميل</button>`:''}${opts.remove?`<button type="button" class="link danger" data-rm-file="${esc(f.id)}" data-field="${esc(opts.field)}">${armed?'تأكيد الإزالة':'إزالة'}</button>`:''}</span></div>`;}).join('')}</div>`;
+}
+function findFile(id){for(const b of allBookings()){const pools=[b.receiptReport||[]];Object.values(b.extra||{}).forEach(v=>{if(Array.isArray(v))pools.push(v);});for(const p of pools)for(const f of p)if(f&&f.id===id)return f;}return null;}
+const OK_TYPES=['image/jpeg','image/png','image/webp','image/gif','application/pdf'];
+const EXT={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','application/pdf':'pdf'};
+async function shrink(file){
+  const bmp=await createImageBitmap(file);const k=Math.min(1,2400/Math.max(bmp.width,bmp.height));
+  const cv=document.createElement('canvas');cv.width=Math.round(bmp.width*k);cv.height=Math.round(bmp.height*k);
+  cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+  const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.85));
+  if(!blob||blob.size>=file.size)return file;
+  return new File([blob],file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});
+}
+async function uploadFiles(files){
+  if(!files.length)return [];
+  if(!S.assets)throw {msg:'رفع الملفات غير مفعّل في الأداة. فعّله من ملف firebase-config.js (راجع دليل التشغيل).'};
+  const out=[];
+  for(const f0 of files){
+    const t=(f0.type||'').toLowerCase();
+    if(!OK_TYPES.includes(t))throw {msg:'«'+f0.name+'» صيغة غير مدعومة. ارفع صورة (JPG أو PNG) أو ملف PDF.'};
+    let f=f0;
+    if(t!=='application/pdf'&&t!=='image/gif'&&f0.size>2.5e6){try{f=await shrink(f0);}catch(e){f=f0;}}
+    let r;
+    const up=()=>S.assets.upload(f,{type:f.type||t});
+    try{r=await up();}
+    catch(e){
+      const c=e&&e.code;
+      if(c==='store_unavailable'){await new Promise(z=>setTimeout(z,800));try{r=await up();}catch(e2){throw {msg:'تعذّر رفع «'+f0.name+'». حاول مرة أخرى.'};}}
+      else throw {msg:c==='too_large'?'«'+f0.name+'» أكبر من 20 ميجا.':c==='unsupported_type'?'«'+f0.name+'» صيغة غير مدعومة. ارفع صورة (JPG أو PNG) أو ملف PDF.':c==='quota_or_state'?'مساحة المرفقات امتلأت. كلّم المسؤول.':c==='rate_limited'?'رفع كثير في وقت قصير. انتظر قليلًا وحاول مرة أخرى.':'تعذّر رفع «'+f0.name+'». حاول مرة أخرى.'};
+    }
+    out.push({id:r.id,url:/^https?:/.test(r.url||'')?r.url:undefined,name:f.name||f0.name,type:r.contentType||t,size:r.sizeBytes||f.size,at:new Date().toISOString(),by:S.me.id||null});
+  }
+  return out;
+}
+const WA_KEYS=['الاسم','اليوم','التاريخ','الوقت','رقم_الحجز','السيارة','نوع_الحجز','القسم','الفرع','موعد_التسليم','أمر_الشغل'];
+function waNum(p){let d=normPhone(p).replace(/^\+/,'');if(d.startsWith('00'))d=d.slice(2);if(/^01\d{9}$/.test(d))return '2'+d;if(/^1\d{9}$/.test(d))return '20'+d;if(/^\d{10,15}$/.test(d))return d;return null;}
+function waUrl(num,text){return 'https://wa.me/'+num+(text?'?text='+encodeURIComponent(text):'');}
+function fillTpl(text,b){
+  const c=cfg();
+  const map={'الاسم':b.customerName||'','اليوم':b.date?dayName(b.date):'','التاريخ':b.date?dm(b.date):'','الوقت':b.receiveTime?fmtTime(b.receiveTime):'','رقم_الحجز':b.code?'\u200E'+b.code+'\u200E':'','السيارة':b.carType||'','نوع_الحجز':typeNames(b).join(' و'),'القسم':deptNames(b).join(' و'),'الفرع':c.branchName||'الفرع','موعد_التسليم':b.deliveryDate?(dayName(b.deliveryDate)+' '+dm(b.deliveryDate)+(b.deliveryTime?' '+fmtTime(b.deliveryTime):'')):'','أمر_الشغل':getWO(b)};
+  return String(text||'').replace(/\{([^{}]+)\}/g,(m,k)=>Object.prototype.hasOwnProperty.call(map,k.trim())?map[k.trim()]:m)
+    .replace(/\s*الساعة\s*(?=[.،\n(]|$)/g,'').replace(/\(\s*\)/g,'')
+    .split('\n').filter(l=>!/[:：]\s*$/.test(l.trim())).map(l=>l.replace(/[ \t]{2,}/g,' ').replace(/\s+([.،])/g,'$1')).join('\n').trim();
+}
+function suggestTpl(b){
+  const t=cfg().waTemplates,has=id=>t.some(x=>x.id===id);let id='confirm';
+  if(b.status==='ready')id='ready';
+  else if(b.status==='postponed'&&b.noDate)id='resched';
+  else if(['booked','postponed','confirmed'].includes(b.status)&&b.date===todayStr())id='remind';
+  return has(id)?id:(t[0]&&t[0].id);
+}
+function rcvLabel(b,wo){return wo?'تأكيد الاستلام':(b.status==='arrived'?'اكتب رقم أمر الشغل أولًا':'تسجيل الوصول — بانتظار أمر الشغل');}
+const isPending=b=>b.approval==='pending'&&!CLOSED.includes(b.status);
+function deptLoad(date,dept,exId){return allBookings().filter(b=>b.id!==exId&&b.date===date&&counts(b)&&deptsOf(b).includes(dept)).length;}
+function overDepts(date,depts,exId){return depts.filter(d=>deptLoad(date,d,exId)>=deptLimit(d));}
+function approvalFor(date,depts,exId){
+  const over=overDepts(date,depts,exId);
+  if(!over.length)return {approval:null,overDepts:[],approvalBy:null,approvalAt:null};
+  if(can('approve'))return {approval:'approved',overDepts:over,approvalBy:S.me.id||null,approvalAt:new Date().toISOString()};
+  return {approval:'pending',overDepts:over,approvalBy:null,approvalAt:null};
+}
+function allBookings(){
+  const seen=new Set(),out=[];
+  for(const b of S.bookings){seen.add(b.id);out.push(b);}
+  for(const k in S.extra)for(const b of S.extra[k])if(!seen.has(b.id)){seen.add(b.id);out.push(b);}
+  return out;
+}
+const findB=id=>allBookings().find(b=>b.id===id);
+
+/* ---------- permissions ---------- */
+function myRoleKey(){
+  if(S.me.isOwner)return 'admin';
+  const c=cfg();const m=S.me.id?S.members[S.me.id]:null;
+  if(m&&m.role&&c.roles[m.role])return m.role;
+  return c.defaultRole&&c.roles[c.defaultRole]?c.defaultRole:null;
+}
+function hasPerm(p){const rk=myRoleKey();if(!rk)return false;if(rk==='admin')return true;return !!(((cfg().roles[rk]||{}).perms||{})[p]);}
+function effView(){const v=S.ui.view;return v==='executive'&&!hasPerm('ceoDash')?'bookings':v;}
+function isAssigned(){return S.me.isOwner||(S.me.id&&S.members[S.me.id]&&cfg().roles[S.members[S.me.id].role]);}
+function writable(){return S.state==='ready'&&S.me.canWrite!==false;}
+function can(p,b){
+  if(!writable())return false;
+  const rk=myRoleKey();if(!rk)return false;
+  if(rk==='admin')return true;
+  const ps=(cfg().roles[rk]||{}).perms||{};
+  if(p==='edit')return !!(ps.editAll||(ps.editOwn&&b&&S.me.id&&(b.createdBy===S.me.id||b.bookedBy===S.me.id)));
+  if(p==='note')return !!(ps.status||ps.mfg||ps.editAll||ps.editOwn||ps.create);
+  if(p==='reopen')return !!ps.editAll;
+  return !!ps[p];
+}
+
+/* ---------- people ---------- */
+function prof(id){return id?S.profiles[id]:null;}
+function nameOf(id){if(!id)return '—';const p=prof(id);return (p&&p.name)||(id===S.me.id?'أنت':'مستخدم');}
+function avatarHTML(id,cls){const p=prof(id);const src=p&&p.avatarUrl;return src?`<img class="av ${cls||''}" src="${esc(src)}" alt="">`:`<span class="av ${cls||''}" aria-hidden="true"></span>`;}
+function personHTML(id){if(!id)return '<span class="muted">—</span>';return avatarHTML(id,'sm')+`<span>${esc(nameOf(id))}</span>`;}
+function collectIds(){
+  const s=new Set();if(S.me.id)s.add(S.me.id);
+  Object.keys(S.members).forEach(i=>s.add(i));Object.keys(S.visitors).forEach(i=>s.add(i));
+  for(const b of allBookings()){if(b.bookedBy)s.add(b.bookedBy);if(b.createdBy)s.add(b.createdBy);if(b.mfgBy)s.add(b.mfgBy);if(b.approvalBy)s.add(b.approvalBy);(b.history||[]).forEach(h=>h.by&&s.add(h.by));}
+  return [...s];
+}
+async function syncProfiles(){
+  if(!S.user)return;const ids=collectIds();if(!ids.length)return;
+  let ps;try{ps=await S.user.profiles(ids);}catch(e){return;}
+  let changed=false;
+  for(const id of ids){const p=ps&&ps[id];if(!p)continue;const o=S.profiles[id];
+    if(!o||o.name!==p.name||o.avatarUrl!==p.avatarUrl){S.profiles[id]={name:p.name,avatarUrl:p.avatarUrl,guest:p.guest};changed=true;}}
+  if(changed){renderCore();if(S.ui.openId&&!S.ui.act)renderDrawer();if(S.ui.set&&S.ui.set.tab==='users')renderUserLists();}
+}
+
+/* ================= data ================= */
+async function init(){
+  bindStatic();renderAll();
+  const C=window.claude;
+  if(!C||typeof C.use!=='function'){S.state='none';renderAll();return;}
+  let db=null,user=null,dl=null;
+  let as=null;
+  try{[db,user,dl,as]=await Promise.all([C.use('db'),C.use('user'),C.use('downloads'),C.use('assets')]);}catch(e){}
+  S.user=user;S.dl=dl;S.assets=as;
+  if(user){
+    try{const me=await user.me();S.me.id=me.id;S.me.isOwner=!!me.isOwner;S.me.canEdit=!!me.canEdit;S.me.view=me;}catch(e){}
+    try{S.me.canWrite=await user.can('data.write');}catch(e){S.me.canWrite=null;}
+  }
+  if(!db){S.state='none';renderAll();return;}
+  S.db=db;S.state='ready';
+  subscribe();registerVisit();renderAll();
+}
+function subscribe(){
+  const db=S.db;
+  S.bTimer=setTimeout(()=>{if(!S.bConfirmed){S.bSlow=true;renderAll();}},10000);
+  db.collection('bookings').orderBy('date','desc').limit(1000).onSnapshot(snap=>{
+    S.bookings=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    S.windowFull=snap.size>=1000;S.bFirst=true;
+    if(!snap.metadata.fromCache){S.bConfirmed=true;clearTimeout(S.bTimer);S.bSlow=false;}
+    renderAll();
+  },err=>{clearTimeout(S.bTimer);S.bFirst=true;S.bSlow=false;if(err&&err.code==='revoked')S.state='revoked';else S.bErr=err;renderAll();});
+  db.doc('config/main').onSnapshot(s=>{S.config=s.exists?s.data():null;renderAll();},()=>{});
+  db.collection('members').onSnapshot(snap=>{const m={};snap.docs.forEach(d=>m[d.id]=d.data());S.members=m;renderAll();if(S.ui.set&&S.ui.set.tab==='users')renderUserLists();},()=>{});
+  if(S.me.canEdit){
+    db.collection('visitors').onSnapshot(snap=>{const v={};snap.docs.forEach(d=>v[d.id]=d.data());S.visitors=v;if(S.ui.set&&S.ui.set.tab==='users')renderUserLists();syncProfiles();},()=>{});
+  }
+}
+async function registerVisit(){
+  if(!S.me.id||S.me.isOwner||S.me.canWrite===false)return;
+  try{const ref=S.db.doc('visitors/'+S.me.id);const s=await ref.get();if(!s.exists)await ref.set({firstSeen:new Date().toISOString()});}catch(e){}
+}
+function maybeFetchDay(d){
+  if(!S.db||!S.windowFull||S.extra[d])return;
+  const last=S.bookings[S.bookings.length-1];
+  if(last&&d<last.date){
+    S.extra[d]=[];
+    S.db.collection('bookings').where('date','==',d).get().then(s=>{S.extra[d]=s.docs.map(x=>Object.assign({id:x.id},x.data()));renderAll();}).catch(()=>{delete S.extra[d];});
+  }
+}
+async function withRetry(fn){try{return await fn();}catch(e){if(e&&e.code==='unavailable'){await new Promise(r=>setTimeout(r,500+Math.random()*700));return fn();}throw e;}}
+async function write(fn,ctx){
+  try{await withRetry(fn);return true;}
+  catch(e){
+    const c=e&&e.code;
+    if(c==='invalid_argument'||c==='transform_error'){
+      toast(ctx==='admin'?'تعذّر الحفظ: دورك في الأداة لا يسمح بتعديل الإعدادات.':'تعذّر الحفظ: دورك في الأداة لا يسمح بهذا الإجراء.','err');
+    }else if(c==='quota_exceeded')toast('قاعدة البيانات وصلت للحد الأقصى. احذف حجوزات قديمة أو كلّم المسؤول.','err');
+    else if(c==='resource_exhausted')toast('طلبات كثيرة في وقت قصير. انتظر ثواني وحاول مرة أخرى.','err');
+    else if(c==='revoked'){S.state='revoked';renderAll();}
+    else toast('تعذّر الاتصال بقاعدة البيانات. حاول مرة أخرى.','err');
+    return false;
+  }
+}
+
+/* ================= views ================= */
+function scopedBase(){
+  const u=S.ui;let arr=allBookings();
+  if(u.q){const q=norm(u.q);const qd=normPhone(u.q);arr=arr.filter(b=>norm([b.customerName,b.carType,b.code,b.other,typeName(b),deptNames(b).join(' '),getWO(b)].join(' ')).includes(q)||(qd.length>=3&&normPhone(b.phone).includes(qd)));}
+  else if(u.scope==='day')arr=arr.filter(b=>b.date===u.date);
+  else if(u.scope==='week'){const ws=weekStart(u.date),we=addDays(ws,6);arr=arr.filter(b=>b.date>=ws&&b.date<=we);}
+  if(u.type!=='all')arr=arr.filter(b=>typesOf(b).includes(u.type));
+  if(u.dept!=='all')arr=arr.filter(b=>deptsOf(b).includes(u.dept));
+  return arr;
+}
+function sortRows(arr){
+  const desc=S.ui.scope==='all'||!!S.ui.q;
+  return arr.slice().sort((a,b)=>{
+    if(a.date!==b.date)return desc?(a.date<b.date?1:-1):(a.date<b.date?-1:1);
+    const ta=a.receiveTime||'99:99',tb=b.receiveTime||'99:99';
+    if(ta!==tb)return ta<tb?-1:1;
+    return String(a.createdAt||'')<String(b.createdAt||'')?-1:1;
+  });
+}
+function lateFlag(b){
+  const now=new Date(),today=todayStr();
+  if(b.status==='postponed'&&b.noDate)return {t:'بانتظار موعد جديد',k:'warn'};
+  if(b.status==='arrived')return {t:'بانتظار أمر الشغل',k:'warn'};
+  if(b.status==='booked'||b.status==='postponed'||b.status==='confirmed'){
+    if(b.date<today)return {t:'فات الموعد',k:'bad'};
+    if(b.date===today&&b.receiveTime){const p=b.receiveTime.split(':').map(Number);const t=new Date();t.setHours(p[0],p[1]+30,0,0);if(now>t)return {t:'متأخر عن الموعد',k:'warn'};}
+  }
+  if((b.status==='received'||b.status==='ready')&&b.deliveryDate){
+    const d=parseYmd(b.deliveryDate);if(b.deliveryTime){const p=b.deliveryTime.split(':').map(Number);d.setHours(p[0],p[1]);}else d.setHours(23,59);
+    if(now>d)return {t:'تأخر التسليم',k:'bad'};
+  }
+  return null;
+}
+function nextActions(b){
+  if(isPending(b))return can('approve')?[{k:'approve',label:'موافقة'}]:[];
+  if(!can('status'))return [];
+  const s=b.status;
+  if(s==='postponed'&&b.noDate)return [{k:'postpone',label:'موعد جديد',panel:1}];
+  if(s==='booked'||s==='postponed')return [{k:'confirm',label:'أكد'},{k:'apolog',label:'اعتذر',panel:1,cls:'alt'}];
+  if(s==='confirmed')return [{k:'arrive',label:'وصل'}];
+  if(s==='arrived')return [{k:'receive',label:'أمر الشغل',panel:1}];
+  if(s==='received')return [{k:'ready',label:'جاهزة'}];
+  if(s==='ready')return [{k:'deliver',label:'تسليم'}];
+  return [];
+}
+function mfgChip(b){
+  if(b.mfgConfirmed)return `<span class="chip ok">${IC.check}تم التأكيد</span>`;
+  if(needsMfg(b))return CLOSED.includes(b.status)?'<span class="chip na">لم يُؤكد</span>':`<span class="chip wait">${IC.clock}بانتظار التأكيد</span>`;
+  return '<span class="chip na">لا يحتاج</span>';
+}
+function dayInfo(d){
+  const c=cfg(),bs=allBookings().filter(b=>b.date===d&&counts(b));let ratio=0;const full=[],over=[];
+  c.departments.forEach(dp=>{const n=bs.filter(b=>deptsOf(b).includes(dp.id)).length,lim=deptLimit(dp.id);ratio=Math.max(ratio,n/lim);if(n>=lim)full.push(dp.id);if(n>lim)over.push(dp.id);});
+  return {n:bs.length,ratio,full,over,pending:bs.filter(isPending).length};
+}
+
+function renderAll(){renderCore();if(S.ui.openId&&!S.ui.act&&!S.ui.confirmDel)renderDrawer();syncProfiles();}
+function renderCore(){
+  renderHeader();renderBanner();renderNav();
+  const v=effView();
+  $('#viewBookings').hidden=v!=='bookings';$('#viewDash').hidden=v!=='dashboard';$('#viewExec').hidden=v!=='executive';
+  if(v!=='executive'){const tp=$('#tip');if(tp)tp.hidden=true;}
+  if(v==='dashboard')renderDash();else if(v==='executive')renderExec();else{renderDateBar();renderToolbar();renderStats();renderList();}
+}
+function renderNav(){
+  $('#navExec').hidden=!hasPerm('ceoDash');
+  document.querySelectorAll('#viewNav [data-view]').forEach(b=>{const on=b.dataset.view===effView();b.classList.toggle('on',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  const n=allBookings().filter(isPending).length,bd=$('#navBadge');bd.hidden=!n;bd.textContent=n;bd.setAttribute('aria-label',n+' بانتظار الموافقة');
+}
+
+function renderHeader(){
+  const c=cfg(),now=new Date();
+  $('#markDay').textContent=now.getDate();$('#markMonth').textContent=fMonth.format(now);
+  $('#branchLine').textContent=(c.branchName?c.branchName+' · ':'')+fFull.format(now);
+  $('#btnNew').hidden=!can('create');
+  $('#btnSettings').hidden=!can('settings');
+  const uc=$('#userChip');
+  if(!S.user||(!S.me.id&&!S.me.isOwner)){uc.hidden=true;return;}
+  const rk=myRoleKey();const role=rk?(c.roles[rk]||{}).name:'بدون دور';
+  const nm=(S.me.view&&S.me.view.name)||nameOf(S.me.id);
+  const src=S.me.view&&S.me.view.avatarUrl;
+  uc.hidden=false;
+  uc.innerHTML=`${src?`<img class="av" src="${esc(src)}" alt="">`:'<span class="av"></span>'}<span class="who"><b>${esc(nm||'أنت')}</b><small>${esc(role)}${S.me.isOwner?' · المالك':''}</small></span>`;
+}
+function renderBanner(){
+  const el=$('#banner');let h='';
+  if(S.state==='none')h=`<div class="banner bad"><span><b>تعذّر الاتصال بقاعدة البيانات.</b> اتأكد من الإنترنت وأعد تحميل الصفحة.</span></div>`;
+  else if(S.state==='revoked')h=`<div class="banner bad"><span><b>تم إيقاف وصولك للبيانات.</b> أعد فتح الأداة أو كلّم المسؤول.</span></div>`;
+  else if(S.bSlow)h=`<div class="banner warn"><span>البيانات تتأخر في الوصول. لو الاتصال ضعيف، ما يظهر الآن قد لا يكون آخر تحديث.</span></div>`;
+  else if(S.state==='ready'&&S.me.canWrite===false)h=`<div class="banner"><span><b>دورك للعرض فقط.</b> تقدر تتابع الحجوزات، ولإضافة أو تعديل حجز اطلب من مدير الأداة يغيّر دورك.</span></div>`;
+  else if(S.state==='ready'&&S.user&&S.me.id&&!isAssigned()&&cfg().defaultRole!=='admin'){
+    const rk=myRoleKey();
+    h=`<div class="banner"><span><b>لم يُحدَّد دورك بعد${rk?` — تعمل الآن بدور «${esc(cfg().roles[rk].name)}»`:''}.</b> اطلب من مدير الأداة إضافتك من الإعدادات ← المستخدمين.</span></div>`;
+  }
+  el.innerHTML=h;
+}
+function renderDateBar(){
+  const u=S.ui,c=cfg(),today=todayStr();
+  $('#selDayName').textContent=dayName(u.date)+(u.date===today?' · اليوم':'');
+  $('#selDate').textContent=dm(u.date);
+  $('#datePick').value=u.date;
+  const ws=weekStart(u.date);let h='';
+  for(let i=0;i<7;i++){
+    const d=addDays(ws,i),inf=dayInfo(d),pct=Math.min(100,inf.ratio*100);
+    const cls=['day',d===u.date&&u.scope==='day'&&!u.q?'sel':'',d===today?'today':'',inf.full.length?'full':'',inf.over.length?'over':''].join(' ');
+    const det=dayName(d)+' '+dm(d)+' — '+inf.n+' حجز'+(inf.full.length?' — ممتلئ: '+inf.full.map(deptName).join('، '):'');
+    h+=`<button type="button" class="${cls}" data-day="${d}" title="${esc(det)}" aria-label="${esc(det)}"><span class="dn">${esc(dayName(d))}</span><span class="dd">${parseYmd(d).getDate()}</span><span class="load"><i style="width:${pct}%"></i></span><span class="cnt ${inf.full.length?'full':''}">${inf.full.length?'ممتلئ':inf.n+' حجز'}</span></button>`;
+  }
+  $('#ribbon').innerHTML=h;
+  maybeFetchDay(u.date);
+}
+function renderToolbar(){
+  document.querySelectorAll('#scopeSeg button').forEach(b=>{const on=b.dataset.scope===S.ui.scope&&!S.ui.q;b.classList.toggle('on',on);b.setAttribute('aria-selected',on?'true':'false');});
+  const c=cfg();const sig=JSON.stringify([S.ui.dept,c.bookingTypes.map(t=>[t.id,t.name,typeDept(t.id)]),c.departments.map(d=>[d.id,d.name])]);
+  if(sig!==S.typeSig){
+    S.typeSig=sig;
+    const vis=c.bookingTypes.filter(t=>S.ui.dept==='all'||!typeDept(t.id)||typeDept(t.id)===S.ui.dept);
+    if(S.ui.type!=='all'&&!vis.some(t=>t.id===S.ui.type))S.ui.type='all';
+    const opt=t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`;
+    let h='<option value="all">كل أنواع الحجز</option>';
+    if(!vis.some(t=>typeDept(t.id)))h+=vis.map(opt).join('');
+    else{c.departments.forEach(d=>{const g=vis.filter(t=>typeDept(t.id)===d.id);if(g.length)h+=`<optgroup label="${esc(d.name)}">${g.map(opt).join('')}</optgroup>`;});const n=vis.filter(t=>!typeDept(t.id));if(n.length)h+=`<optgroup label="عام">${n.map(opt).join('')}</optgroup>`;}
+    $('#typeFilter').innerHTML=h;
+  }
+  $('#typeFilter').value=S.ui.type;
+  const dsig=JSON.stringify(c.departments.map(d=>[d.id,d.name]));
+  if(dsig!==S.deptSig){
+    S.deptSig=dsig;if(S.ui.dept!=='all'&&!c.departments.some(d=>d.id===S.ui.dept))S.ui.dept='all';
+    $('#deptFilter').innerHTML='<option value="all">كل الأقسام</option>'+c.departments.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}</option>`).join('');
+  }
+  $('#deptFilter').value=S.ui.dept;
+  $('#btnExport').hidden=!(can('export')&&S.dl);
+}
+function renderStats(){
+  const base=scopedBase();
+  $('#stats').innerHTML=GROUPS.map(g=>{const n=base.filter(g.test).length;if(g.opt&&!n&&S.ui.status!==g.k)return '';
+    return `<button type="button" class="stat ${S.ui.status===g.k?'on':''}" data-stat="${g.k}" data-k="${g.k}" style="--dot:${g.dot||'var(--ink-2)'}" aria-pressed="${S.ui.status===g.k}"><b>${n}</b><span>${g.label}</span></button>`;}).join('');
+}
+function renderList(){
+  const el=$('#list'),u=S.ui;
+  if(S.state==='loading'||(S.state==='ready'&&!S.bFirst)){el.innerHTML='<div class="loading-row">جارٍ تحميل الحجوزات…</div>';return;}
+  if(S.state!=='ready'){el.innerHTML=emptyHTML('تعذّر الاتصال بقاعدة البيانات','اتأكد من الإنترنت وأعد تحميل الصفحة.');return;}
+  if(S.bErr&&!S.bookings.length){el.innerHTML=emptyHTML('تعذّر تحميل الحجوزات','أعد فتح الصفحة بعد قليل.');return;}
+  const g=GROUPS.find(x=>x.k===u.status)||GROUPS[0];
+  const base=scopedBase();const rows=sortRows(base.filter(g.test));
+  if(!rows.length){
+    if(u.q)el.innerHTML=emptyHTML('لا توجد نتائج','جرّب جزءًا من الاسم أو آخر أرقام التليفون.');
+    else if(base.length)el.innerHTML=emptyHTML('لا توجد حجوزات بهذه الحالة',`في ${scopeLabel()} ${base.length} حجز بحالات أخرى.`,'<button class="btn" type="button" data-stat="all">عرض الكل</button>');
+    else if(u.scope==='day')el.innerHTML=emptyHTML(`لا توجد حجوزات يوم ${dayName(u.date)} ${dm(u.date)}`,can('create')?'سجّل أول حجز لهذا اليوم، وكل التحديثات بعد كده (وصول العميل، التأجيل، التسليم) تتم من على الحجز نفسه.':'لما يتم تسجيل حجوزات لهذا اليوم هتظهر هنا.',can('create')?`<button class="btn primary" type="button" data-new="1">${IC.plus}حجز جديد</button>`:'');
+    else el.innerHTML=emptyHTML(u.scope==='week'?'لا توجد حجوزات في هذا الأسبوع':'لا توجد حجوزات بعد',can('create')?'ابدأ بتسجيل أول حجز من زر «حجز جديد».':'لما يتم تسجيل حجوزات هتظهر هنا.',can('create')?`<button class="btn primary" type="button" data-new="1">${IC.plus}حجز جديد</button>`:'');
+    return;
+  }
+  let h=`<div class="thead" aria-hidden="true"><span>الموعد</span><span>العميل</span><span>السيارة والقسم</span><span>التصنيع</span><span class="h-by">القائم بالحجز</span><span>الحالة</span><span></span></div>`;
+  const grouped=u.scope!=='day'||!!u.q;let last=null;
+  for(const b of rows){
+    if(grouped&&b.date!==last){last=b.date;const n=rows.filter(x=>x.date===b.date).length;h+=`<div class="grp"><b>${esc(dayName(b.date))} ${esc(dm(b.date))}${b.date===todayStr()?' · اليوم':''}</b><span>${n} حجز</span></div>`;}
+    h+=rowHTML(b);
+  }
+  if(S.windowFull)h+='<div class="list-note">البحث و«كل الحجوزات» يعرضان آخر 1000 حجز. لعرض يوم أقدم اختره من التقويم.</div>';
+  el.innerHTML=h;
+}
+function scopeLabel(){return S.ui.q?'نتائج البحث':S.ui.scope==='day'?'هذا اليوم':S.ui.scope==='week'?'هذا الأسبوع':'كل الحجوزات';}
+function emptyHTML(t,p,btn){return `<div class="empty"><h3>${esc(t)}</h3><p>${esc(p)}</p>${btn||''}</div>`;}
+function rowHTML(b){
+  const tm=splitTime(b.receiveTime),lf=lateFlag(b),na=nextActions(b);
+  const extras=cfg().customFields.filter(f=>f.showInList&&b.extra&&b.extra[f.id]!==undefined&&b.extra[f.id]!==''&&b.extra[f.id]!==false&&!(Array.isArray(b.extra[f.id])&&!b.extra[f.id].length)).map(f=>f.type==='checkbox'?f.label:f.label+': '+fmtField(f,b.extra[f.id]));
+  return `<div class="row ${['cancelled','noshow'].includes(b.status)?'dim':''}" data-open="${esc(b.id)}" tabindex="0" role="button" aria-label="${esc('حجز '+b.customerName)}">
+    <div class="c-time">${tm?`<b>${tm.t}</b><span>${tm.ap}</span>`:'<span>بدون وقت</span>'}</div>
+    <div class="c-cust"><div class="nm">${esc(b.customerName)}</div><div class="phl"><span class="ph">${esc(b.phone)}</span>${can('note')&&waNum(b.phone)?`<button type="button" class="wa-ic" data-wa="${esc(b.id)}" aria-label="${esc('رسالة واتساب إلى '+b.customerName)}" title="واتساب">${IC.chat}</button>`:''}</div></div>
+    <div class="c-car"><div class="car">${esc(b.carType||'—')}</div><div class="sub">${esc([deptNames(b).join('، '),typeName(b)].filter(Boolean).join(' · '))}${b.postponeCount?' · أُجّل '+b.postponeCount+(b.postponeCount>1?' مرات':' مرة'):''}${extras.length?' · '+esc(extras.join(' · ')):''}</div></div>
+    <div class="c-mfg">${mfgChip(b)}</div>
+    <div class="c-by">${personHTML(b.bookedBy)}</div>
+    <div class="c-st"><span class="pill" data-s="${esc(b.status)}">${esc(STATUS[b.status]||b.status)}</span>${isPending(b)?'<span class="flag bad">بانتظار الموافقة</span>':''}${lf?`<span class="flag ${lf.k}">${lf.t}</span>`:''}</div>
+    <div class="c-act">${na.map(a=>`<button type="button" class="btn sm quick ${a.cls||''}" data-quick="${a.k}" data-id="${esc(b.id)}"${a.panel?' data-panel="1"':''}>${a.label}</button>`).join('')}</div>
+  </div>`;
+}
+function fmtField(f,v){
+  if(f.type==='file')return Array.isArray(v)&&v.length?v.length+(v.length>1?' ملفات':' ملف'):'—';
+  if(v===undefined||v===null||v==='')return '—';
+  if(f.type==='checkbox')return v?'نعم':'لا';
+  if(f.type==='date')return dayName(v)+' '+dm(v);
+  return String(v);
+}
+
+/* ---------- drawer ---------- */
+function openDrawer(id){S.ui.openId=id;S.ui.act=null;S.ui.confirmDel=false;S.ui.rmArm=null;S.ui.waTpl=null;renderDrawer();const d=$('#drawer');d.scrollTop=0;setTimeout(()=>{const c=d.querySelector('[data-close="drawer"]');c&&c.focus();},30);}
+function closeDrawer(){S.ui.openId=null;S.ui.act=null;S.ui.confirmDel=false;$('#drawerWrap').hidden=true;}
+function renderDrawer(){
+  const b=S.ui.openId?findB(S.ui.openId):null;
+  if(!b){closeDrawer();return;}
+  $('#drawerWrap').hidden=false;
+  const c=cfg(),s=b.status,lf=lateFlag(b);
+  const acts=[];
+  const pend=isPending(b);
+  if(pend&&can('approve'))acts.push(['approve','الموافقة على الحجز','primary'],['reject','رفض الحجز','danger']);
+  if(can('status')){
+    if(s==='postponed'&&b.noDate)acts.push(['postpone','تحديد موعد جديد','primary']);
+    else if(s==='booked'||s==='postponed'){acts.push(['confirm','أكد الحضور',pend?'':'primary']);if(!pend)acts.push(['receive','وصل العميل','']);acts.push(['apolog','اعتذر — تأجيل',''],['noshow','لم يحضر',''])}
+    if(s==='confirmed'){if(!pend)acts.push(['receive','وصل العميل — استلام السيارة','primary']);acts.push(['apolog','اعتذر — تأجيل',''],['noshow','لم يحضر',''])}
+    if(s==='arrived')acts.push(['receive','إدخال أمر الشغل وتأكيد الاستلام','primary']);
+    if(DONE_RCV.includes(s)&&S.assets)acts.push(['attach','إرفاق '+rptLabel(),''])
+    if(s==='received')acts.push(['ready','جاهزة للتسليم','primary'],['deliver','تسليم للعميل','']);
+    if(s==='ready')acts.push(['deliver','تسليم السيارة للعميل','primary']);
+    if(s==='noshow')acts.push(['postpone','حجز موعد جديد','primary']);
+  }
+  if(can('note')&&waNum(b.phone))acts.push(['wa','واتساب','wa']);
+  if(can('mfg')&&s!=='cancelled')acts.push(b.mfgConfirmed?['mfg_off','إلغاء تأكيد التصنيع','']:['mfg_on','تأكيد طلب التصنيع','mfg']);
+  if(can('cancel')&&['booked','postponed','noshow','confirmed','arrived'].includes(s))acts.push(['cancel','إلغاء الحجز','danger']);
+  if(can('reopen')&&CLOSED.includes(s))acts.push(['reopen','إعادة فتح الحجز','']);
+  if(can('note'))acts.push(['note','إضافة ملاحظة','ghost']);
+
+  const recvPlan=b.receiveTime?fmtTime(b.receiveTime):'بدون وقت محدد';
+  const delPlan=b.deliveryDate?(dayName(b.deliveryDate)+' '+dm(b.deliveryDate)+(b.deliveryTime?' · '+fmtTime(b.deliveryTime):'')):'—';
+  const mfgTxt=b.mfgConfirmed?`تم التأكيد${b.mfgBy?' بواسطة '+esc(nameOf(b.mfgBy)):''}${b.mfgAt?`<span class="act">${esc(fmtStamp(b.mfgAt))}</span>`:''}`:(needsMfg(b)?'<span style="color:var(--amber);font-weight:600">لم يتم التأكيد بعد</span>':'لا يحتاج تصنيع');
+  const wf=woField(),rf=rptField(),wo=getWO(b),rpt=getRpt(b),flowOn=DONE_RCV.includes(s)||s==='arrived';
+  const custom=c.customFields.filter(f=>(!wf||f.id!==wf.id)&&(!rf||f.id!==rf.id)).map(f=>f.type==='file'
+    ?`<div class="full"><dt>${esc(f.label)}</dt><dd>${fileList(b,f.id).length?filesHTML(fileList(b,f.id),{remove:can('edit',b),field:f.id}):'—'}</dd></div>`
+    :`<div><dt>${esc(f.label)}</dt><dd>${esc(fmtField(f,b.extra&&b.extra[f.id]))}</dd></div>`).join('');
+  const flowFacts=(wo||flowOn)?`<div class="full"><dt>${esc(woLabel())}</dt><dd>${wo?`<span class="mono">${esc(wo)}</span>`:'<span style="color:var(--amber);font-weight:600">لم يُكتب بعد — الاستلام معلّق</span>'}</dd></div>`+
+    ((rpt.length||DONE_RCV.includes(s))?`<div class="full"><dt>${esc(rptLabel())}</dt><dd>${rpt.length?filesHTML(rpt,{remove:can('edit',b)||can('status'),field:'__rpt'}):'<span class="muted">لم يُرفق بعد</span>'}</dd></div>`:''):'';
+  const ph=normPhone(b.phone);
+  const others=ph?sortRows(allBookings().filter(x=>x.id!==b.id&&normPhone(x.phone)===ph)).reverse().slice(0,6):[];
+  const hist=(b.history||[]).slice().reverse();
+
+  $('#drawer').innerHTML=`
+    <div class="dw-head">
+      <button type="button" class="btn icon ghost" data-close="drawer" aria-label="إغلاق">${IC.x}</button>
+      <span class="code mono">#${esc(b.code||b.id.slice(0,6))}</span><span class="sp"></span>
+      <span class="pill" data-s="${esc(s)}">${esc(STATUS[s]||s)}</span>
+    </div>
+    <div class="dw-title">
+      <h2>${esc(b.customerName)}</h2>
+      <p>${esc(typeName(b))}${b.carType?' · '+esc(b.carType):''}</p>
+      ${(lf||b.postponeCount||pend)?`<div class="flags">${pend?'<span class="flag bad">بانتظار الموافقة — لا يمكن استلام السيارة قبلها</span>':''}${lf?`<span class="flag ${lf.k}">${lf.t}</span>`:''}${b.postponeCount?`<span class="flag warn">أُجّل ${b.postponeCount} ${b.postponeCount>1?'مرات':'مرة'}</span>`:''}</div>`:''}
+    </div>
+    ${acts.length?`<div class="dw-actions">${acts.map(a=>`<button type="button" class="btn ${a[2]}" data-act="${a[0]}">${a[1]}</button>`).join('')}</div>`:''}
+    ${S.ui.act?panelHTML(b,S.ui.act):''}
+    <dl class="facts">
+      <div><dt>رقم التليفون</dt><dd><span class="ph">${esc(b.phone)}</span> <button type="button" class="link" data-copy="${esc(b.phone)}">نسخ</button></dd></div>
+      <div><dt>اليوم والتاريخ</dt><dd>${esc(dayName(b.date))} ${esc(dm(b.date))}</dd></div>
+      <div><dt>وقت استلام السيارة</dt><dd><span class="plan">${esc(recvPlan)}</span>${b.arrivedAt&&b.arrivedAt!==b.actualReceivedAt?`<span class="act">الوصول: ${esc(fmtStamp(b.arrivedAt))}</span>`:''}${b.actualReceivedAt?`<span class="act">الفعلي: ${esc(fmtStamp(b.actualReceivedAt))}</span>`:''}</dd></div>
+      <div><dt>تسليم السيارة للعميل</dt><dd><span class="plan">${esc(delPlan)}</span>${b.actualDeliveredAt?`<span class="act">الفعلي: ${esc(fmtStamp(b.actualDeliveredAt))}</span>`:''}</dd></div>
+      <div><dt>نوع السيارة</dt><dd>${esc(b.carType||'—')}</dd></div>
+      <div><dt>تأكيد طلب التصنيع</dt><dd>${mfgTxt}</dd></div>
+      <div><dt>القائم بالحجز</dt><dd>${esc(nameOf(b.bookedBy))}</dd></div>
+      <div><dt>نوع الحجز</dt><dd>${esc(typeNames(b).join('، ')||'—')}</dd></div>
+      <div class="full"><dt>القسم</dt><dd>${esc(deptNames(b).join('، ')||'—')}</dd></div>
+      ${b.approval?`<div class="full"><dt>الموافقة</dt><dd>${approvalTxt(b)}</dd></div>`:''}
+      ${flowFacts}
+      ${custom}
+      <div class="full"><dt>أخرى</dt><dd>${b.other?esc(b.other).replace(/\n/g,'<br>'):'—'}</dd></div>
+    </dl>
+    ${others.length?`<div><p class="sec-h">حجوزات أخرى لنفس الرقم</p><div class="others">${others.map(o=>`<button type="button" data-goto="${esc(o.id)}"><span>${esc(dayName(o.date))} ${esc(dm(o.date))} · ${esc(typeName(o))}</span><span class="pill" data-s="${esc(o.status)}">${esc(STATUS[o.status]||'')}</span></button>`).join('')}</div></div>`:''}
+    <div><p class="sec-h">سجل الإجراءات</p>
+      <ol class="hist">${hist.map(histHTML).join('')||'<li><span class="h-m">لا يوجد سجل.</span></li>'}</ol>
+    </div>
+    ${(can('edit',b)||can('delete'))?`<div class="dw-foot">
+      ${S.ui.confirmDel?`<div class="confirm"><span style="flex:1">حذف هذا الحجز نهائيًا؟ لا يمكن التراجع.</span><button type="button" class="btn sm danger-solid" data-del-ok="1">حذف نهائي</button><button type="button" class="btn sm" data-del-cancel="1">رجوع</button></div>`:`
+      ${can('edit',b)?'<button type="button" class="btn" data-edit="1">تعديل البيانات</button>':''}
+      ${can('delete')?'<button type="button" class="btn danger" data-del="1">حذف</button>':''}`}
+    </div>`:''}`;
+}
+function histHTML(h){
+  let note='';
+  if(h.type==='postponed'&&h.to)note=`من ${fmtSlot(h.from)} إلى ${fmtSlot(h.to)}`;
+  if(h.type==='edited'&&h.fields&&h.fields.length)note='تم تعديل: '+h.fields.join('، ');
+  if(h.type==='postponed'&&h.noDate)note='بدون موعد جديد — يتم التواصل لتحديد موعد';
+  if((h.type==='received'||h.type==='delivered'||h.type==='arrived')&&h.time&&Math.abs(new Date(h.time)-new Date(h.at))>120000)note='الوقت الفعلي: '+fmtStamp(h.time);
+  const n=[note,h.wo?'أمر الشغل: '+h.wo:'',h.files?'مرفقات: '+h.files+(h.files>1?' ملفات':' ملف'):'',h.note].filter(Boolean);
+  return `<li data-t="${esc(h.type)}"><div><div class="h-t">${esc(HIST[h.type]||h.type)}</div><div class="h-m">${esc(fmtStamp(h.at))} · ${esc(nameOf(h.by))}</div>${n.map(x=>`<div class="h-n">${esc(x)}</div>`).join('')}</div></li>`;
+}
+function fmtSlot(s){if(!s)return '—';const [d,t]=String(s).split(' ');return dayName(d)+' '+dm(d)+(t?' '+fmtTime(t):'');}
+function deptHintHTML(date,depts,exId){
+  if(!depts.length)return '<span class="hint">لم يُحدَّد قسم لهذا الحجز.</span>';
+  const over=overDepts(date,depts,exId);
+  const parts=depts.map(d=>deptName(d)+' '+deptLoad(date,d,exId)+'/'+deptLimit(d)).join(' · ');
+  return `<span class="hint ${over.length?'bad':''}">${esc(parts)}${over.length?(can('approve')?' — ممتلئ، وسيُسجَّل بموافقتك':' — ممتلئ، والحجز سيحتاج موافقة'):''}</span>`;
+}
+function approvalTxt(b){
+  const over=(b.overDepts||[]).map(deptName).join('، ');
+  if(b.approval==='pending')return `<span style="color:var(--danger);font-weight:600">بانتظار الموافقة</span>${over?`<span class="act">${esc(over)} ممتلئ يوم ${esc(dayName(b.date)+' '+dm(b.date))}</span>`:''}`;
+  if(b.approval==='approved')return `تمت الموافقة${b.approvalBy?' بواسطة '+esc(nameOf(b.approvalBy)):''}<span class="act">${over?'حجز فوق الحد في '+esc(over):''}${over&&b.approvalAt?' · ':''}${b.approvalAt?esc(fmtStamp(b.approvalAt)):''}</span>`;
+  if(b.approval==='rejected')return `مرفوض${b.approvalBy?' بواسطة '+esc(nameOf(b.approvalBy)):''}${b.approvalAt?`<span class="act">${esc(fmtStamp(b.approvalAt))}</span>`:''}`;
+  return '—';
+}
+function panelHTML(b,k){
+  const capHint=d=>deptHintHTML(d,deptsOf(b),b.id);
+  const back='<button type="button" class="btn" data-panel-cancel="1">رجوع</button>';
+  if(k==='receive'){
+    const arrived=b.status==='arrived',wf=woField(),req=cfg().receiveFlow.requireReport,existing=getRpt(b),wo=getWO(b);
+    return `<div class="panel"><h4>${arrived?'إدخال أمر الشغل وتأكيد الاستلام':'وصل العميل — استلام السيارة'}</h4>
+      ${arrived&&b.arrivedAt?`<p class="hint" style="margin:0">وصل العميل ${esc(fmtStamp(b.arrivedAt))}</p>`:''}
+      <div class="row2">
+        <div class="f"><label for="pWO">${esc(woLabel())}${arrived?' <span class="req">*</span>':''}</label><input type="text" id="pWO" dir="ltr" inputmode="${wf&&wf.type==='number'?'numeric':'text'}" value="${esc(wo)}" autocomplete="off"><span class="hint">${arrived?'مطلوب لتأكيد استلام السيارة.':'لو أمر الشغل لسه ما اتعملش سيبه فاضي، والحجز هيفضل «بانتظار أمر الشغل».'}</span></div>
+        <div class="f"><label for="pTime">${arrived?'وقت الاستلام':'وقت الوصول'}</label><input type="datetime-local" id="pTime" value="${nowLocal()}"></div>
+      </div>
+      <div class="f" id="rptWrap" ${wo||existing.length?'':'hidden'}><label for="pFiles">${esc(rptLabel())}${req?' <span class="req">*</span>':' (اختياري)'}</label>
+        ${existing.length?filesHTML(existing):''}
+        ${S.assets?'<input type="file" id="pFiles" multiple accept="image/*,application/pdf"><span class="hint">صورة أو PDF. من الموبايل تقدر تصوّر المحضر مباشرة.</span>':'<span class="hint bad">رفع الملفات غير مفعّل في الأداة.</span>'}</div>
+      <div class="f"><label for="pNote">ملاحظة (اختياري)</label><input type="text" id="pNote" placeholder="مثال: العميل ساب المفتاح الاحتياطي"></div>
+      <div class="btns"><button type="button" class="btn primary" id="rcvBtn" data-panel-ok="receive" ${arrived&&!wo?'disabled':''}>${rcvLabel(b,wo)}</button>${back}</div></div>`;
+  }
+  if(k==='wa'){
+    const tpls=cfg().waTemplates,cur=tpls.find(x=>x.id===S.ui.waTpl)||tpls.find(x=>x.id===suggestTpl(b))||tpls[0];
+    const num=waNum(b.phone),text=cur?fillTpl(cur.text,b):'';
+    return `<div class="panel"><h4>رسالة واتساب إلى ${esc(b.customerName)} <span class="ph">${esc(b.phone)}</span></h4>
+      ${tpls.length?`<div class="tpls" aria-label="الرسائل الجاهزة">${tpls.map(x=>`<button type="button" class="tpl ${cur&&x.id===cur.id?'on':''}" data-wa-tpl="${esc(x.id)}" aria-pressed="${cur&&x.id===cur.id?'true':'false'}">${esc(x.name)}</button>`).join('')}</div>`:'<p class="hint" style="margin:0">لا توجد رسائل جاهزة. أضفها من الإعدادات ← رسائل واتساب.</p>'}
+      <div class="f"><label for="waText" class="sr">نص الرسالة</label><textarea id="waText" rows="6">${esc(text)}</textarea></div>
+      ${num?'':'<p class="hint bad" style="margin:0">رقم التليفون مش بصيغة صحيحة لواتساب. عدّله من «تعديل البيانات».</p>'}
+      <div class="btns">${num?`<a class="btn wa-go" id="waLink" href="${esc(waUrl(num,text))}" target="_blank" rel="noopener" data-wa-open="${esc(cur?cur.name:'رسالة')}">${IC.chat}فتح واتساب</a>`:''}<button type="button" class="btn" data-wa-copy="1">نسخ الرسالة</button>${back}</div>
+      <p class="hint" style="margin:0">بيفتح محادثة العميل والرسالة مكتوبة، والإرسال بيتم بالضغط على «إرسال» في واتساب. لو المحادثة ما فتحتش، انسخ الرسالة وابعتها يدوي.</p></div>`;
+  }
+  if(k==='attach')return `<div class="panel"><h4>إرفاق ${esc(rptLabel())}</h4><div class="f"><label for="pFiles" class="sr">الملفات</label><input type="file" id="pFiles" multiple accept="image/*,application/pdf"><span class="hint">صورة أو PDF.</span></div><div class="btns"><button type="button" class="btn primary" data-panel-ok="attach">رفع الملفات</button>${back}</div></div>`;
+  if(k==='deliver'){
+    return `<div class="panel"><h4>تسليم السيارة للعميل</h4>
+      <div class="row2"><div class="f"><label for="pTime">وقت التسليم الفعلي</label><input type="datetime-local" id="pTime" value="${nowLocal()}"></div>
+      <div class="f"><label for="pNote">ملاحظة (اختياري)</label><input type="text" id="pNote" placeholder="مثال: تم التحصيل كاش"></div></div>
+      <div class="btns"><button type="button" class="btn primary" data-panel-ok="deliver">تسجيل التسليم</button>${back}</div></div>`;
+  }
+  if(k==='postpone'){
+    const nd=addDays(b.date<todayStr()?todayStr():b.date,1),noD=!!S.ui.noDateDef&&!b.noDate;
+    return `<div class="panel"><h4>${b.status==='noshow'?'حجز موعد جديد':b.noDate?'تحديد موعد جديد':'اعتذار العميل — تأجيل الموعد'}</h4>
+      ${b.noDate?'':`<div class="radios" role="radiogroup" aria-label="طريقة التأجيل"><label class="check"><input type="radio" name="pMode" value="date" ${noD?'':'checked'}>تحديد موعد جديد الآن</label><label class="check"><input type="radio" name="pMode" value="nodate" ${noD?'checked':''}>بدون موعد حاليًا</label></div>`}
+      <div class="row2" id="pDateRow" ${noD?'hidden':''}><div class="f"><label for="pDate">التاريخ الجديد <span class="req">*</span></label><input type="date" id="pDate" value="${nd}"><span id="pDateHint">${capHint(nd)}</span></div>
+      <div class="f"><label for="pT">الوقت</label><input type="time" id="pT" value="${esc(b.receiveTime||'')}"></div></div>
+      <div class="f"><label for="pNote">سبب التأجيل</label><input type="text" id="pNote" placeholder="مثال: العميل اعتذر في مكالمة الصباح"></div>
+      <div class="btns"><button type="button" class="btn primary" data-panel-ok="postpone">تأكيد التأجيل</button>${back}</div></div>`;
+  }
+  if(k==='cancel')return `<div class="panel"><h4>إلغاء الحجز</h4><div class="f"><label for="pNote">سبب الإلغاء <span class="req">*</span></label><input type="text" id="pNote"></div><div class="btns"><button type="button" class="btn danger-solid" data-panel-ok="cancel">تأكيد الإلغاء</button>${back}</div></div>`;
+  if(k==='noshow')return `<div class="panel"><h4>العميل لم يحضر</h4><div class="f"><label for="pNote">ملاحظة (اختياري)</label><input type="text" id="pNote" placeholder="مثال: تم الاتصال ولم يرد"></div><div class="btns"><button type="button" class="btn primary" data-panel-ok="noshow">تسجيل عدم الحضور</button>${back}</div></div>`;
+  if(k==='reject')return `<div class="panel"><h4>رفض الحجز</h4><p class="hint" style="margin:0">الحجز سيتحول إلى «ملغي». لو العميل يقدر ييجي يوم تاني استخدم «تأجيل» بدل الرفض.</p><div class="f"><label for="pNote">سبب الرفض <span class="req">*</span></label><input type="text" id="pNote"></div><div class="btns"><button type="button" class="btn danger-solid" data-panel-ok="reject">تأكيد الرفض</button>${back}</div></div>`;
+  if(k==='note')return `<div class="panel"><h4>إضافة ملاحظة</h4><div class="f"><label for="pNote" class="sr">الملاحظة</label><textarea id="pNote"></textarea></div><div class="btns"><button type="button" class="btn primary" data-panel-ok="note">حفظ الملاحظة</button>${back}</div></div>`;
+  return '';
+}
+
+/* ---------- actions ---------- */
+async function doAction(id,kind,p){
+  p=p||{};const b=findB(id);if(!b||!S.db)return null;
+  const nowIso=new Date().toISOString();
+  const entry={type:ACT2HIST[kind]||kind,at:nowIso,by:S.me.id||null};
+  if(p.note&&p.note.trim())entry.note=p.note.trim();
+  const upd={updatedAt:nowIso,updatedBy:S.me.id||null};
+  const prev={status:b.status,date:b.date,receiveTime:b.receiveTime||'',deliveryDate:b.deliveryDate||'',deliveryTime:b.deliveryTime||'',actualReceivedAt:b.actualReceivedAt||null,actualDeliveredAt:b.actualDeliveredAt||null,postponeCount:b.postponeCount||0,mfgConfirmed:!!b.mfgConfirmed,mfgBy:b.mfgBy||null,mfgAt:b.mfgAt||null,approval:b.approval||null,approvalBy:b.approvalBy||null,approvalAt:b.approvalAt||null,overDepts:(b.overDepts||[]).slice(),noDate:!!b.noDate,arrivedAt:b.arrivedAt||null,confirmedAt:b.confirmedAt||null,confirmedBy:b.confirmedBy||null,history:(b.history||[]).slice()};
+  const ts=v=>{const d=v?new Date(v):new Date();return isNaN(d)?nowIso:d.toISOString();};
+  switch(kind){
+    case 'receive':{
+      const wo=normDigits(p.wo||'').trim(),at=ts(p.time),wf=woField(),rf=rptField(),ext={};
+      if(wo){if(wf)ext[wf.id]=wf.type==='number'&&/^[1-9]\d*$/.test(wo)?Number(wo):wo;else upd.workOrder=wo;entry.wo=wo;}
+      if(p.uploaded&&p.uploaded.length){const all=getRpt(b).concat(p.uploaded);if(rf)ext[rf.id]=all;else upd.receiptReport=all;entry.files=p.uploaded.length;}
+      if(Object.keys(ext).length)upd.extra=ext;
+      if(wo){upd.status='received';upd.actualReceivedAt=at;entry.time=at;if(!b.arrivedAt)upd.arrivedAt=at;}
+      else{upd.status='arrived';upd.arrivedAt=at;entry.type='arrived';entry.time=at;}
+      break;}
+    case 'arrive':upd.status='arrived';upd.arrivedAt=nowIso;break;
+    case 'confirm':upd.status='confirmed';upd.confirmedAt=nowIso;upd.confirmedBy=S.me.id||null;break;
+    case 'attach':{const rf=rptField(),all=getRpt(b).concat(p.uploaded||[]);if(rf)upd.extra={[rf.id]:all};else upd.receiptReport=all;entry.files=(p.uploaded||[]).length;break;}
+    case 'ready':upd.status='ready';break;
+    case 'deliver':upd.status='delivered';upd.actualDeliveredAt=ts(p.time);entry.time=upd.actualDeliveredAt;break;
+    case 'postpone':{
+      if(p.noDate){upd.status='postponed';upd.noDate=true;upd.postponeCount=(b.postponeCount||0)+1;entry.from=b.date+(b.receiveTime?' '+b.receiveTime:'');entry.noDate=true;break;}
+      const diff=daysBetween(b.date,p.date);upd.status='postponed';upd.noDate=false;upd.date=p.date;upd.receiveTime=p.t||'';
+      upd.deliveryDate=b.deliveryDate?addDays(b.deliveryDate,diff):p.date;upd.postponeCount=(b.postponeCount||0)+(b.noDate?0:1);
+      entry.from=b.date+(b.receiveTime?' '+b.receiveTime:'');entry.to=p.date+(upd.receiveTime?' '+upd.receiveTime:'');
+      if(p.date!==b.date||b.noDate){Object.assign(upd,approvalFor(p.date,deptsOf(b),b.id));if(upd.approval)entry.note=[entry.note,(upd.approval==='pending'?'يحتاج موافقة: ':'تمت الموافقة: ')+upd.overDepts.map(deptName).join('، ')+' ممتلئ'].filter(Boolean).join(' — ');}
+      break;}
+    case 'noshow':upd.status='noshow';break;
+    case 'cancel':upd.status='cancelled';break;
+    case 'reopen':upd.status=b.actualReceivedAt?'received':'booked';upd.actualDeliveredAt=null;if(b.status!=='delivered')Object.assign(upd,approvalFor(b.date,deptsOf(b),b.id));break;
+    case 'mfg_on':upd.mfgConfirmed=true;upd.mfgBy=S.me.id||null;upd.mfgAt=nowIso;break;
+    case 'mfg_off':upd.mfgConfirmed=false;upd.mfgBy=null;upd.mfgAt=null;break;
+    case 'approve':upd.approval='approved';upd.approvalBy=S.me.id||null;upd.approvalAt=nowIso;break;
+    case 'reject':upd.approval='rejected';upd.status='cancelled';upd.approvalBy=S.me.id||null;upd.approvalAt=nowIso;break;
+    case 'note':break;
+  }
+  upd.history=prev.history.concat([entry]);
+  const ok=await write(()=>S.db.doc('bookings/'+id).update(upd));
+  if(ok&&b.date&&S.extra[b.date]){delete S.extra[b.date];}
+  return ok?prev:null;
+}
+async function undo(id,prev){
+  const ok=await write(()=>S.db.doc('bookings/'+id).update(Object.assign({},prev,{updatedAt:new Date().toISOString(),updatedBy:S.me.id||null})));
+  if(ok)toast('تم التراجع');
+}
+const DONE={receive:'تم تسجيل استلام السيارة',ready:'السيارة جاهزة للتسليم',deliver:'تم تسليم السيارة للعميل',postpone:'تم تأجيل الموعد',noshow:'تم تسجيل عدم الحضور',cancel:'تم إلغاء الحجز',reopen:'تمت إعادة فتح الحجز',mfg_on:'تم تأكيد طلب التصنيع',mfg_off:'تم إلغاء تأكيد التصنيع',note:'تمت إضافة الملاحظة',approve:'تمت الموافقة على الحجز',reject:'تم رفض الحجز',confirm:'تم تسجيل تأكيد الحضور',arrive:'تم تسجيل وصول العميل — اكتب رقم أمر الشغل لتأكيد الاستلام',attach:'تم رفع الملفات'};
+
+/* ---------- booking form ---------- */
+function openForm(id){S.ui.form={id:id||null};$('#modalWrap').hidden=false;renderForm();setTimeout(()=>{const f=$('#fName');f&&f.focus();},40);}
+function closeModal(){S.ui.form=null;S.ui.set=null;$('#modalWrap').hidden=true;$('#modal').innerHTML='';}
+function msHTML(id,opts,sel,ph){
+  const chosen=opts.filter(o=>sel.includes(o.id));
+  return `<div class="ms" id="${id}" data-ph="${esc(ph)}"><button type="button" class="ms-btn" data-ms-toggle="${id}" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}L">${chosen.length?chosen.map(o=>`<span class="ms-tag">${esc(o.name)}</span>`).join(''):`<span class="ph-txt">${esc(ph)}</span>`}</button><div class="ms-pop" hidden role="listbox" aria-multiselectable="true">${opts.map(o=>`<label><input type="checkbox" value="${esc(o.id)}" ${sel.includes(o.id)?'checked':''}><span>${esc(o.name)}</span>${o.extra||''}</label>`).join('')||'<span class="hint" style="padding:8px">لا توجد اختيارات. أضفها من الإعدادات.</span>'}</div></div>`;
+}
+function msValue(id){return [...document.querySelectorAll('#'+id+' .ms-pop input:checked')].map(i=>i.value);}
+function msRefresh(id){
+  const box=$('#'+id);if(!box)return;
+  const names=[...box.querySelectorAll('.ms-pop input:checked')].map(i=>i.nextElementSibling.textContent);
+  box.querySelector('.ms-btn').innerHTML=names.length?names.map(n=>`<span class="ms-tag">${esc(n)}</span>`).join(''):`<span class="ph-txt">${esc(box.dataset.ph||'اختر')}</span>`;
+  if(names.length)box.classList.remove('bad');
+}
+function typePopHTML(depts,checked,extra,showAll){
+  const c=cfg();
+  const opts=c.bookingTypes.map(t=>({id:t.id,name:t.name,dept:typeDept(t.id)})).concat(extra||[]);
+  if(!opts.length)return '<span class="hint" style="padding:8px">لا توجد أنواع. أضفها من الإعدادات.</span>';
+  const row=o=>`<label><input type="checkbox" value="${esc(o.id)}" ${checked.includes(o.id)?'checked':''}><span>${esc(o.name)}</span></label>`;
+  if(!opts.some(o=>o.dept))return opts.map(row).join('');
+  const mk=(id,name)=>({name,items:opts.filter(o=>o.dept===id)});
+  const grp=g=>g.items.length?`<div class="ms-gh" role="presentation">${esc(g.name)}</div>${g.items.map(row).join('')}`:'';
+  const gen=mk('','عام');
+  if(!depts.length)return c.departments.map(d=>grp(mk(d.id,d.name))).join('')+grp(gen);
+  const sel=c.departments.filter(d=>depts.includes(d.id)).map(d=>mk(d.id,d.name));
+  const other=c.departments.filter(d=>!depts.includes(d.id)).map(d=>mk(d.id,d.name));
+  const restN=other.reduce((a,g)=>a+g.items.length,0);
+  const open=showAll||other.some(g=>g.items.some(o=>checked.includes(o.id)));
+  return sel.map(grp).join('')+grp(gen)+(restN?`<div class="ms-rest" ${open?'':'hidden'}>${other.map(grp).join('')}</div>${open?'':`<button type="button" class="ms-more" data-ms-more="1">عرض أنواع باقي الأقسام (${restN})</button>`}`:'');
+}
+function buildTypePop(){
+  const box=$('#msTypes');if(!box||!S.ui.form)return;
+  box.querySelector('.ms-pop').innerHTML=typePopHTML(msValue('msDepts'),msValue('msTypes'),S.ui.form.extraTypes,S.ui.form.showAllTypes);
+}
+function onMsChange(t){
+  const box=t.closest('.ms'),id=box.id,f=S.ui.form;
+  const dIn=v=>document.querySelector('#msDepts .ms-pop input[value="'+CSS.escape(v)+'"]');
+  if(id==='msTypes'){
+    f.autoDepts=f.autoDepts||[];
+    if(t.checked){const dp=typeDept(t.value),di=dp&&dIn(dp);if(di&&!di.checked){di.checked=true;f.autoDepts.push(dp);msRefresh('msDepts');}}
+    else{const still=msValue('msTypes').map(typeDept);f.autoDepts=f.autoDepts.filter(d=>{if(still.includes(d))return true;const di=dIn(d);if(di)di.checked=false;return false;});msRefresh('msDepts');}
+  }
+  if(id==='msDepts')f.autoDepts=(f.autoDepts||[]).filter(d=>d!==t.value);
+  msRefresh(id);updateFormHints();
+}
+function closeMs(except){document.querySelectorAll('.ms').forEach(m=>{if(m.id===except)return;const p=m.querySelector('.ms-pop');if(p&&!p.hidden){p.hidden=true;m.querySelector('.ms-btn').setAttribute('aria-expanded','false');}});}
+function renderForm(){
+  const c=cfg(),id=S.ui.form.id,b=id?findB(id):null;
+  const v=b||{date:S.ui.date,deliveryDate:S.ui.date,bookedBy:S.me.id,receiveTime:'',deliveryTime:'',extra:{}};
+  const selTypes=b?typesOf(b):[],selDepts=b?deptsOf(b):(S.ui.dept!=='all'?[S.ui.dept]:[]);
+  const people=[...new Set([S.me.id,...Object.keys(S.members),...allBookings().map(x=>x.bookedBy)].filter(Boolean))];
+  if(v.bookedBy&&!people.includes(v.bookedBy))people.push(v.bookedBy);
+  const cars=[...new Set(c.carTypes.concat(allBookings().map(x=>x.carType)).filter(Boolean))].sort();
+  const typeOpts=c.bookingTypes.map(t=>({id:t.id,name:t.name}));
+  const extraTypes=[];selTypes.forEach(t=>{if(!typeOpts.some(o=>o.id===t)){const o={id:t,name:(b.typeNames&&b.typeNames[t])||b.typeName||'نوع محذوف',dept:''};typeOpts.push(o);extraTypes.push(o);}});
+  S.ui.form.extraTypes=extraTypes;S.ui.form.showAllTypes=false;S.ui.form.autoDepts=[];
+  const deptOpts=c.departments.map(d=>({id:d.id,name:d.name,extra:`<span class="cap" data-cap="${esc(d.id)}"></span>`}));
+  selDepts.forEach(d=>{if(!deptOpts.some(o=>o.id===d))deptOpts.push({id:d,name:(b&&b.deptNames&&b.deptNames[d])||'قسم محذوف'});});
+  const wfF=woField(),rfF=rptField(),showFlow=b&&DONE_RCV.includes(b.status);
+  const cf=c.customFields.filter(f=>showFlow||((!wfF||f.id!==wfF.id)&&(!rfF||f.id!==rfF.id))).map(f=>{const val=v.extra?v.extra[f.id]:undefined;const fid='cf_'+f.id;
+    let inp;
+    if(f.type==='file'){const ex=Array.isArray(val)?val:[];inp=(ex.length?filesHTML(ex):'')+(S.assets?`<input type="file" id="${fid}" multiple accept="image/*,application/pdf">`:'<span class="hint">رفع الملفات غير مفعّل في الأداة.</span>');}
+    else if(f.type==='select')inp=`<select id="${fid}"><option value=""></option>${(f.options||[]).map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+    else if(f.type==='checkbox')inp=`<label class="check"><input type="checkbox" id="${fid}" ${val?'checked':''}>${esc(f.label)}</label>`;
+    else inp=`<input type="${f.type==='number'?'number':f.type==='date'?'date':'text'}" id="${fid}" value="${esc(val==null?'':val)}">`;
+    return `<div class="f ${f.type==='file'?'full':''}">${f.type==='checkbox'?'<span class="lbl">&nbsp;</span>':`<label for="${fid}">${esc(f.label)}</label>`}${inp}</div>`;}).join('');
+  $('#modal').setAttribute('aria-label',b?'تعديل الحجز':'حجز جديد');
+  $('#modal').innerHTML=`
+    <div class="m-head"><h2>${b?'تعديل الحجز <span class="mono muted" style="font-size:14px">#'+esc(b.code||'')+'</span>':'حجز جديد'}</h2><button type="button" class="btn icon ghost" data-close="modal" aria-label="إغلاق">${IC.x}</button></div>
+    <form id="bkForm" class="m-body" novalidate>
+      <div class="form-grid">
+        <div class="f"><label for="fName">اسم العميل <span class="req">*</span></label><input type="text" id="fName" value="${esc(v.customerName||'')}" autocomplete="off"></div>
+        <div class="f"><label for="fPhone">رقم التليفون <span class="req">*</span></label><input type="tel" id="fPhone" dir="ltr" inputmode="tel" value="${esc(v.phone||'')}" placeholder="01xxxxxxxxx"><span id="phoneHint" class="hint"></span></div>
+        <div class="f"><span class="lbl" id="msDeptsL">القسم <span class="req">*</span></span>${msHTML('msDepts',deptOpts,selDepts,'اختر قسمًا أو أكثر')}</div>
+        <div class="f"><span class="lbl" id="msTypesL">نوع الحجز <span class="req">*</span></span>${msHTML('msTypes',typeOpts,selTypes,'اختر نوعًا أو أكثر')}<span class="hint">اختيار النوع بيضيف قسمه تلقائيًا.</span></div>
+        <div class="f"><label for="fCar">نوع السيارة</label><input type="text" id="fCar" list="carList" value="${esc(v.carType||'')}" placeholder="مثال: هيونداي إلنترا 2022"><datalist id="carList">${cars.map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+        <div class="f"><label for="fBy">القائم بالحجز</label><select id="fBy">${people.map(p=>`<option value="${esc(p)}" ${p===v.bookedBy?'selected':''}>${esc(nameOf(p))}</option>`).join('')||'<option value="">—</option>'}</select></div>
+        <div class="f"><label for="fDate">اليوم والتاريخ <span class="req">*</span></label><input type="date" id="fDate" value="${esc(v.date||'')}"><span id="dateHint" class="hint"></span></div>
+        <div class="f"><label for="fRecv">وقت استلام السيارة</label><input type="time" id="fRecv" value="${esc(v.receiveTime||'')}"></div>
+        <div id="apprBox" class="approve-box" hidden></div>
+        <div class="f"><span class="lbl">موعد تسليم السيارة للعميل</span><div class="pair"><input type="date" id="fDelDate" aria-label="تاريخ التسليم" value="${esc(v.deliveryDate||'')}"><input type="time" id="fDelTime" aria-label="وقت التسليم" value="${esc(v.deliveryTime||'')}"></div></div>
+        ${can('mfg')?`<div class="f"><span class="lbl">&nbsp;</span><label class="check"><input type="checkbox" id="fMfg" ${v.mfgConfirmed?'checked':''}>تأكيد طلب التصنيع</label></div>`:''}
+        ${cf}
+        <div class="f full"><label for="fOther">أخرى</label><textarea id="fOther" placeholder="أي تفاصيل إضافية: لون الفرش، طلبات خاصة، عربون…">${esc(v.other||'')}</textarea></div>
+        <p id="formErr" class="form-err" hidden></p>
+      </div>
+    </form>
+    <div class="m-foot"><button type="submit" form="bkForm" class="btn primary" id="fSave">${b?'حفظ التعديلات':'حفظ الحجز'}</button><button type="button" class="btn" data-close="modal">إلغاء</button></div>`;
+  S.ui.form.lastDate=v.date;
+  buildTypePop();
+  updateFormHints();
+}
+function formOver(b,date,depts,id){
+  if(!date||!depts.length)return [];
+  const check=b&&b.date===date?depts.filter(x=>!deptsOf(b).includes(x)):depts;
+  return overDepts(date,check,id);
+}
+function updateFormHints(){
+  const f=S.ui.form;if(!f)return;const id=f.id,b=id?findB(id):null;
+  const d=$('#fDate')&&$('#fDate').value;const depts=msValue('msDepts');
+  document.querySelectorAll('#msDepts [data-cap]').forEach(el=>{const dp=el.dataset.cap;if(!d){el.textContent='';return;}const n=deptLoad(d,dp,id),lim=deptLimit(dp);el.textContent=n+'/'+lim+(n>=lim?' ممتلئ':'');el.classList.toggle('full',n>=lim);});
+  const dh=$('#dateHint');
+  if(dh){dh.className='hint';if(d){const parts=depts.map(x=>deptName(x)+' '+deptLoad(d,x,id)+'/'+deptLimit(x));dh.textContent=dayName(d)+(parts.length?' · '+parts.join(' · '):'');}else dh.textContent='';}
+  const box=$('#apprBox');
+  if(box){
+    const over=formOver(b,d,depts,id);
+    if(over.length){box.hidden=false;box.innerHTML=`<b>${esc(over.map(x=>deptName(x)+' ('+deptLoad(d,x,id)+' من '+deptLimit(x)+')').join('، '))} ممتلئ يوم ${esc(dayName(d)+' '+dm(d))}.</b><span>${can('approve')?'عندك صلاحية الموافقة، فالحجز سيُسجَّل كموافَق عليه باسمك.':'الحجز سيُسجَّل «بانتظار الموافقة»، ولن يمكن استلام السيارة قبل موافقة المسؤول.'}</span>`;}
+    else box.hidden=true;
+  }
+  const ph=normPhone($('#fPhone')&&$('#fPhone').value);const hh=$('#phoneHint');
+  if(hh){
+    if(!ph){hh.textContent='';return;}
+    const prev=allBookings().filter(x=>x.id!==id&&normPhone(x.phone)===ph);
+    const bad=!/^(01[0125]\d{8}|\+?20\d{9,10}|0\d{8,9})$/.test(ph);
+    let t='',cls='hint';
+    if(prev.length){const open=prev.filter(x=>!CLOSED.includes(x.status));const lastB=sortRows(prev).pop();
+      t='عميل سابق: '+prev.length+' حجز، آخرها '+dayName(lastB.date)+' '+dm(lastB.date)+(open.length?' — عنده '+open.length+' حجز مفتوح':'');cls=open.length?'hint warn':'hint';}
+    else if(bad){t='تأكد من الرقم: الموبايل المصري 11 رقم ويبدأ بـ 01';cls='hint warn';}
+    hh.textContent=t;hh.className=cls;
+  }
+}
+async function saveForm(){
+  if(!S.db)return;
+  const c=cfg(),id=S.ui.form.id,b=id?findB(id):null;
+  const val=k=>($('#'+k)?$('#'+k).value:'').trim();
+  const types=msValue('msTypes'),depts=msValue('msDepts');
+  const data={types,departments:depts,customerName:val('fName'),phone:val('fPhone'),date:val('fDate'),receiveTime:val('fRecv'),deliveryDate:val('fDelDate')||val('fDate'),deliveryTime:val('fDelTime'),carType:val('fCar'),bookedBy:val('fBy')||S.me.id||null,other:($('#fOther').value||'').trim()};
+  data.typeNames={};types.forEach(t=>{const x=c.bookingTypes.find(y=>y.id===t);data.typeNames[t]=x?x.name:((b&&b.typeNames&&b.typeNames[t])||'نوع محذوف');});
+  data.deptNames={};depts.forEach(d=>{const x=c.departments.find(y=>y.id===d);data.deptNames[d]=x?x.name:((b&&b.deptNames&&b.deptNames[d])||'قسم محذوف');});
+  data.typeNeedsMfg=types.some(t=>{const x=c.bookingTypes.find(y=>y.id===t);return !!(x&&x.needsMfg);});
+  const missing=[];if(!data.customerName)missing.push('اسم العميل');if(!data.phone)missing.push('رقم التليفون');if(!types.length)missing.push('نوع الحجز');if(!depts.length)missing.push('القسم');if(!data.date)missing.push('التاريخ');
+  const err=$('#formErr');
+  $('#msTypes').classList.toggle('bad',!types.length);$('#msDepts').classList.toggle('bad',!depts.length);
+  if(missing.length){err.textContent='أكمل الخانات المطلوبة: '+missing.join('، ');err.hidden=false;return;}
+  if(data.deliveryDate<data.date){err.textContent='تاريخ التسليم لا يمكن أن يكون قبل يوم الحجز.';err.hidden=false;return;}
+  err.hidden=true;
+  const extra={},filePicks=[];c.customFields.forEach(f=>{const el=$('#cf_'+f.id);if(!el)return;if(f.type==='file'){if(el.files&&el.files.length)filePicks.push([f.id,[...el.files]]);return;}extra[f.id]=f.type==='checkbox'?el.checked:(f.type==='number'&&el.value!==''?Number(el.value):el.value.trim());});
+  const wfS=woField();
+  if(b&&DONE_RCV.includes(b.status)&&wfS&&$('#cf_'+wfS.id)&&!String(extra[wfS.id]==null?'':extra[wfS.id]).trim()){err.textContent='رقم أمر الشغل مطلوب لأن السيارة تم استلامها.';err.hidden=false;return;}
+  if(filePicks.length){
+    const sb=$('#fSave');sb.disabled=true;sb.textContent='جارٍ رفع الملفات…';
+    try{for(const [fid,files] of filePicks){const upl=await uploadFiles(files);extra[fid]=((b&&b.extra&&Array.isArray(b.extra[fid]))?b.extra[fid]:[]).concat(upl);}}
+    catch(e){err.textContent=e.msg||'تعذّر رفع الملفات.';err.hidden=false;sb.disabled=false;sb.textContent=b?'حفظ التعديلات':'حفظ الحجز';return;}
+  }
+  data.extra=Object.assign({},b&&b.extra||{},extra);
+  const nowIso=new Date().toISOString();
+  if(can('mfg')&&$('#fMfg')){const m=$('#fMfg').checked;if(!b||m!==!!b.mfgConfirmed){data.mfgConfirmed=m;data.mfgBy=m?S.me.id||null:null;data.mfgAt=m?nowIso:null;}}
+  const over=formOver(b,data.date,depts,id);
+  let appr=null;
+  if(over.length)appr=can('approve')?{approval:'approved',overDepts:over,approvalBy:S.me.id||null,approvalAt:nowIso}:{approval:'pending',overDepts:over,approvalBy:null,approvalAt:null};
+  else if(b&&b.date!==data.date&&b.approval)appr={approval:null,overDepts:[],approvalBy:null,approvalAt:null};
+  if(appr)Object.assign(data,appr);
+  const apprEntry=appr&&appr.approval?{type:appr.approval==='pending'?'approval_req':'approved',at:nowIso,by:S.me.id||null,note:appr.overDepts.map(deptName).join('، ')+' ممتلئ يوم '+dayName(data.date)+' '+dm(data.date)}:null;
+  $('#fSave').disabled=true;
+  let ok;
+  if(b){
+    const changed=Object.keys(FIELD_LABELS).filter(k=>k in data&&String(data[k]==null?'':data[k])!==String(b[k]==null?'':b[k])).map(k=>FIELD_LABELS[k]);
+    c.customFields.forEach(f=>{if(!(f.id in extra))return;const a=(b.extra||{})[f.id],z=extra[f.id];if(String(a==null?'':a)!==String(z==null?'':z))changed.push(f.label);});
+    const hist=(b.history||[]).slice();
+    if(changed.length)hist.push({type:'edited',at:nowIso,by:S.me.id||null,fields:changed});
+    if('mfgConfirmed' in data)hist.push({type:data.mfgConfirmed?'mfg_on':'mfg_off',at:nowIso,by:S.me.id||null});
+    if(apprEntry)hist.push(apprEntry);
+    Object.assign(data,{updatedAt:nowIso,updatedBy:S.me.id||null,history:hist});
+    ok=await write(()=>S.db.doc('bookings/'+id).update(data));
+    if(ok)toast(appr&&appr.approval==='pending'?'تم حفظ التعديلات — الحجز بانتظار الموافقة':'تم حفظ التعديلات');
+  }else{
+    const doc=Object.assign({code:makeCode(data.date),status:'booked',postponeCount:0,mfgConfirmed:false,mfgBy:null,mfgAt:null,actualReceivedAt:null,actualDeliveredAt:null,approval:null,overDepts:[],approvalBy:null,approvalAt:null},data,{createdAt:nowIso,createdBy:S.me.id||null,updatedAt:nowIso,updatedBy:S.me.id||null,history:[{type:'created',at:nowIso,by:S.me.id||null}]});
+    if(doc.mfgConfirmed)doc.history.push({type:'mfg_on',at:nowIso,by:S.me.id||null});
+    if(apprEntry)doc.history.push(apprEntry);
+    ok=await write(()=>S.db.collection('bookings').doc().set(doc));
+    if(ok){toast('تم حفظ الحجز #'+doc.code+(doc.approval==='pending'?' — بانتظار الموافقة':''));if(S.ui.scope==='day'&&S.ui.date!==data.date&&!S.ui.q){S.ui.date=data.date;}}
+  }
+  if(ok){closeModal();renderAll();}else{const sv=$('#fSave');if(sv)sv.disabled=false;}
+}
+
+/* ---------- settings ---------- */
+function openSettings(){S.ui.set={tab:'general',draft:JSON.parse(JSON.stringify(cfg()))};$('#modalWrap').hidden=false;$('#modal').setAttribute('aria-label','الإعدادات');renderSettings();}
+function renderSettings(){
+  const st=S.ui.set,d=st.draft;
+  const tabs=[['general','عام'],['depts','الأقسام'],['types','أنواع الحجز'],['cars','أنواع السيارات'],['fields','حقول إضافية'],['wa','رسائل واتساب'],['roles','الأدوار والصلاحيات'],['users','المستخدمين']];
+  const lock=!S.me.canEdit?'<div class="banner warn"><span>حفظ الإعدادات يحتاج دور عنده صلاحية «الإعدادات والمستخدمين». تقدر تتصفح فقط.</span></div>':'';
+  let body='';
+  if(st.tab==='general'){
+    body=`<div class="set-sec">${lock}<div class="form-grid">
+      <div class="f"><label for="sBranch">اسم الفرع</label><input type="text" id="sBranch" data-bind="branchName" value="${esc(d.branchName||'')}" placeholder="مثال: فرع مدينة نصر"><span class="hint">يظهر في رسائل واتساب مكان {الفرع}.</span></div>
+      <div class="f full"><label for="sDef">الدور الافتراضي لأي شخص يفتح الأداة بدون دور</label><select id="sDef" data-bind="defaultRole"><option value="">بدون صلاحيات (عرض فقط)</option>${d.roleOrder.map(k=>`<option value="${esc(k)}" ${d.defaultRole===k?'selected':''}>${esc(d.roles[k].name)}</option>`).join('')}</select></div>
+    </div></div>`;
+  }else if(st.tab==='types'){
+    body=`<div class="set-sec">${lock}<p>اربط كل نوع بالقسم اللي بيشتغل عليه: في نموذج الحجز الأنواع بتظهر متجمعة تحت أقسامها، واختيار النوع بيختار قسمه تلقائيًا. النوع اللي من غير قسم بيظهر تحت «عام». علّم «يحتاج تأكيد تصنيع» للأنواع اللي مابتبدأش إلا بعد تأكيد طلب التصنيع.</p>
+      <div>${d.bookingTypes.map((t,i)=>`<div class="lrow typ"><input type="text" aria-label="اسم النوع" data-bind="bookingTypes.${i}.name" value="${esc(t.name)}"><select aria-label="القسم" data-bind="bookingTypes.${i}.dept"><option value="">بدون قسم (عام)</option>${d.departments.filter(x=>String(x.name||'').trim()).map(x=>`<option value="${esc(x.id)}" ${t.dept===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><label class="check"><input type="checkbox" data-bind="bookingTypes.${i}.needsMfg" data-kind="bool" ${t.needsMfg?'checked':''}>يحتاج تأكيد تصنيع</label><button type="button" class="btn icon ghost" data-set-act="delType:${i}" aria-label="حذف">${IC.x}</button></div>`).join('')}</div>
+      <div><button type="button" class="btn" data-set-act="addType">${IC.plus}إضافة نوع</button></div></div>`;
+  }else if(st.tab==='depts'){
+    body=`<div class="set-sec">${lock}<p>القسم خانة إجبارية في كل حجز، ويمكن اختيار أكثر من قسم. «الحد اليومي» هو عدد العملاء الذي يستقبله القسم في اليوم: عند الوصول له يظهر اليوم «ممتلئ» في لوحة الأقسام، وأي حجز زيادة في هذا القسم يُسجَّل «بانتظار الموافقة» إلى أن يوافق عليه دور عنده صلاحية «الموافقة على الحجز فوق الطاقة».</p>
+      <div>${d.departments.map((x,i)=>`<div class="lrow"><input type="text" aria-label="اسم القسم" data-bind="departments.${i}.name" value="${esc(x.name)}" placeholder="اسم القسم"><label class="lim">الحد اليومي<input type="number" min="1" data-bind="departments.${i}.limit" data-kind="num" value="${esc(x.limit)}"></label><button type="button" class="btn icon ghost" data-set-act="delDept:${i}" aria-label="حذف القسم">${IC.x}</button></div>`).join('')||'<p class="muted" style="margin:0">لا توجد أقسام.</p>'}</div>
+      <div><button type="button" class="btn" data-set-act="addDept">${IC.plus}إضافة قسم</button></div></div>`;
+  }else if(st.tab==='cars'){
+    body=`<div class="set-sec">${lock}<p>قائمة اقتراحات تظهر عند كتابة نوع السيارة. أي نوع يُكتب في حجز يُضاف للاقتراحات تلقائيًا، والخانة تقبل الكتابة الحرة دائمًا.</p>
+      <div class="chips">${d.carTypes.map((x,i)=>`<span>${esc(x)}<button type="button" data-set-act="delCar:${i}" aria-label="حذف ${esc(x)}">${IC.x}</button></span>`).join('')||'<span class="muted" style="background:none;padding:0">لا توجد أنواع مضافة.</span>'}</div>
+      <div class="addline"><input type="text" id="sCarNew" placeholder="مثال: تويوتا كورولا"><button type="button" class="btn" data-set-act="addCar">إضافة</button></div></div>`;
+  }else if(st.tab==='fields'){
+    const tl={text:'نص',number:'رقم',date:'تاريخ',select:'قائمة اختيار',checkbox:'نعم / لا',file:'ملف / مرفق'};
+    body=`<div class="set-sec">${lock}<p>أضف خانات خاصة بالفرع تظهر في نموذج الحجز وتفاصيله، مثل رقم اللوحة أو العربون أو لون الفرش. علّم «في القائمة» لعرض القيمة تحت نوع السيارة في جدول الحجوزات.</p>
+      <div>${d.customFields.map((f,i)=>`<div class="lrow fld"><input type="text" aria-label="اسم الخانة" data-bind="customFields.${i}.label" value="${esc(f.label)}" placeholder="اسم الخانة"><select aria-label="نوع الخانة" data-bind="customFields.${i}.type" data-rerender="1">${Object.keys(tl).map(k=>`<option value="${k}" ${f.type===k?'selected':''}>${tl[k]}</option>`).join('')}</select>
+        <input class="opt" type="text" aria-label="الاختيارات" data-bind="customFields.${i}.options" data-kind="list" value="${esc((f.options||[]).join('، '))}" placeholder="${f.type==='select'?'الاختيارات مفصولة بفاصلة':'—'}" ${f.type==='select'?'':'disabled'}>
+        <label class="check"><input type="checkbox" data-bind="customFields.${i}.showInList" data-kind="bool" ${f.showInList?'checked':''}>في القائمة</label>
+        <button type="button" class="btn icon ghost" data-set-act="delField:${i}" aria-label="حذف">${IC.x}</button></div>`).join('')||'<p class="muted" style="margin:0">لا توجد حقول إضافية بعد.</p>'}</div>
+      <div><button type="button" class="btn" data-set-act="addField">${IC.plus}إضافة حقل</button></div>
+      <div class="set-sub"><h4>خطوة استلام السيارة</h4>
+        <p>تأكيد استلام السيارة يتطلب كتابة رقم أمر الشغل، ومن غيره يفضل الحجز «وصل العميل — بانتظار أمر الشغل». بعد كتابة الرقم تظهر خانة إرفاق محضر الاستلام. الخانتين دول لا يظهروا في نموذج الحجز الجديد، ويتم ملؤهم وقت الاستلام.</p>
+        <div class="form-grid">
+          <div class="f"><label for="sWO">خانة رقم أمر الشغل</label><select id="sWO" data-bind="receiveFlow.workOrderField"><option value="">خانة داخلية «رقم أمر الشغل»</option>${d.customFields.filter(f=>f.type==='text'||f.type==='number').map(f=>`<option value="${esc(f.id)}" ${d.receiveFlow.workOrderField===f.id?'selected':''}>${esc(f.label||'خانة بدون اسم')}</option>`).join('')}</select></div>
+          <div class="f"><label for="sRpt">خانة محضر الاستلام (نوعها ملف)</label><select id="sRpt" data-bind="receiveFlow.reportField"><option value="">خانة داخلية «محضر الاستلام»</option>${d.customFields.filter(f=>f.type==='file').map(f=>`<option value="${esc(f.id)}" ${d.receiveFlow.reportField===f.id?'selected':''}>${esc(f.label||'خانة بدون اسم')}</option>`).join('')}</select></div>
+          <div class="f full"><label class="check"><input type="checkbox" data-bind="receiveFlow.requireReport" data-kind="bool" ${d.receiveFlow.requireReport?'checked':''}>إرفاق محضر الاستلام إجباري لتأكيد الاستلام</label></div>
+        </div>
+      </div></div>`;
+  }else if(st.tab==='wa'){
+    body=`<div class="set-sec">${lock}<p>رسائل جاهزة تظهر عند الضغط على «واتساب» في أي حجز، ويمكن تعديل نصها قبل الإرسال. الكلمات بين { } تُستبدل ببيانات الحجز تلقائيًا، والسطر اللي قيمته فاضية بيتشال.</p>
+      <div class="chips ph-keys" aria-label="الكلمات المتاحة">${WA_KEYS.map(k=>`<span>{${k}}</span>`).join('')}</div>
+      <div>${d.waTemplates.map((x,i)=>`<div class="tpl-row"><div class="tpl-top"><input type="text" aria-label="اسم الرسالة" data-bind="waTemplates.${i}.name" value="${esc(x.name)}" placeholder="اسم الرسالة"><button type="button" class="btn icon ghost" data-set-act="delTpl:${i}" aria-label="حذف الرسالة">${IC.x}</button></div><textarea aria-label="نص الرسالة" rows="4" data-bind="waTemplates.${i}.text" placeholder="نص الرسالة">${esc(x.text)}</textarea></div>`).join('')||'<p class="muted" style="margin:0">لا توجد رسائل.</p>'}</div>
+      <div><button type="button" class="btn" data-set-act="addTpl">${IC.plus}إضافة رسالة</button></div></div>`;
+  }else if(st.tab==='roles'){
+    body=`<div class="set-sec">${lock}<p>كل مستخدم يأخذ دورًا واحدًا، والدور يحدد ما يظهر له من أزرار. دور «مدير النظام» له كل الصلاحيات دائمًا، والصلاحيات دي بيطبقها السيرفر نفسه مش الشاشة بس.</p>
+      <div class="matrix-wrap"><table class="matrix"><thead><tr><th>الدور</th>${PERMS.map(p=>`<th>${esc(p[1])}</th>`).join('')}<th></th></tr></thead><tbody>
+      ${d.roleOrder.map(k=>{const r=d.roles[k];const adm=k==='admin';return `<tr><td><input type="text" aria-label="اسم الدور" data-bind="roles.${k}.name" value="${esc(r.name)}"></td>${PERMS.map(p=>`<td><input type="checkbox" aria-label="${esc(r.name+' — '+p[1])}" data-bind="roles.${k}.perms.${p[0]}" data-kind="bool" ${adm||(r.perms||{})[p[0]]?'checked':''} ${adm?'disabled':''}></td>`).join('')}<td>${adm?'':`<button type="button" class="btn icon ghost" data-set-act="delRole:${k}" aria-label="حذف الدور">${IC.x}</button>`}</td></tr>`;}).join('')}
+      </tbody></table></div>
+      <div><button type="button" class="btn" data-set-act="addRole">${IC.plus}إضافة دور</button></div></div>`;
+  }else if(st.tab==='users'){
+    body=`<div class="set-sec">${lock}<p>اختر دور كل شخص. أي حد يسجّل دخول بحساب Google بيظهر تحت «فتحوا الأداة ولم يُحدَّد دورهم»، ومش بيشوف أي بيانات قبل ما تحدد دوره. الأدوار المتاحة هي المحفوظة حاليًا؛ لو عدّلت في تبويب الأدوار احفظ أولًا.</p>
+      <div><p class="sec-h">المستخدمون وأدوارهم</p><div id="memList"></div></div>
+      <div class="f"><label for="userSearch">إضافة شخص من فريقك</label><input type="search" id="userSearch" placeholder="اكتب الاسم أو الإيميل" autocomplete="off"><div id="userResults"></div></div>
+      <div id="visWrap"><p class="sec-h">فتحوا الأداة ولم يُحدَّد دورهم</p><div id="visList"></div></div></div>`;
+  }
+  $('#modal').innerHTML=`
+    <div class="m-head"><h2>الإعدادات</h2><button type="button" class="btn icon ghost" data-close="modal" aria-label="إغلاق">${IC.x}</button></div>
+    <div class="tabs" role="tablist">${tabs.map(t=>`<button type="button" role="tab" data-set-tab="${t[0]}" class="${st.tab===t[0]?'on':''}" aria-selected="${st.tab===t[0]}">${t[1]}</button>`).join('')}</div>
+    <div class="m-body">${body}</div>
+    <div class="m-foot">${st.tab==='users'?'<span class="muted" style="font-size:12.5px">تغييرات المستخدمين تُحفظ فورًا.</span><span class="sp"></span><button type="button" class="btn" data-close="modal">إغلاق</button>':`<button type="button" class="btn primary" data-set-save="1" ${S.me.canEdit?'':'disabled'}>حفظ الإعدادات</button><button type="button" class="btn" data-close="modal">إغلاق</button><span class="sp"></span><span class="muted" style="font-size:12.5px">التعديلات لا تُطبق قبل الحفظ.</span>`}</div>`;
+  if(st.tab==='users')renderUserLists();
+}
+function roleSelect(attr,id,cur,withEmpty){
+  const c=cfg();
+  return `<select ${attr}="${esc(id)}" aria-label="الدور" ${S.me.canEdit?'':'disabled'}>${withEmpty?'<option value="">اختر الدور</option>':''}${c.roleOrder.map(k=>`<option value="${esc(k)}" ${k===cur?'selected':''}>${esc(c.roles[k].name)}</option>`).join('')}</select>`;
+}
+function renderUserLists(){
+  const ml=$('#memList');if(!ml)return;
+  const c=cfg();let h='';
+  if(S.me.isOwner&&S.me.id)h+=`<div class="urow"><div class="who">${avatarHTML(S.me.id,'sm')}<span>${esc(nameOf(S.me.id))}</span><span class="tag">المالك</span></div><span class="muted" style="font-size:13px">${esc(c.roles.admin.name)} — ثابت</span><span></span></div>`;
+  const ids=Object.keys(S.members).filter(i=>i!==S.me.id||!S.me.isOwner);
+  ids.sort((a,b)=>nameOf(a).localeCompare(nameOf(b),'ar'));
+  h+=ids.map(id=>{const m=S.members[id];const p=prof(id);return `<div class="urow"><div class="who">${avatarHTML(id,'sm')}<span>${esc(nameOf(id))}</span>${p&&p.guest?'<span class="tag">ضيف</span>':''}</div>${roleSelect('data-member-role',id,m.role,!c.roles[m.role])}<button type="button" class="btn icon ghost" data-member-del="${esc(id)}" aria-label="إزالة" ${S.me.canEdit?'':'disabled'}>${IC.x}</button></div>`;}).join('');
+  if(!ids.length&&!S.me.isOwner)h+='<p class="muted" style="margin:0">لا يوجد مستخدمون بعد.</p>';
+  if(!ids.length&&S.me.isOwner)h+='<p class="muted" style="margin:8px 0 0;font-size:13px">لم تضف أحدًا بعد. ابحث عن زملائك بالأسفل، أو شارك الأداة معهم وسيظهرون هنا بعد أول فتح.</p>';
+  ml.innerHTML=h;
+  const vis=Object.keys(S.visitors).filter(id=>!S.members[id]&&id!==S.me.id);
+  $('#visWrap').hidden=!vis.length;
+  $('#visList').innerHTML=vis.map(id=>`<div class="urow"><div class="who">${avatarHTML(id,'sm')}<span>${esc(nameOf(id))}</span>${S.visitors[id].firstSeen?`<span class="muted" style="font-size:12px">${esc(dm(ymd(new Date(S.visitors[id].firstSeen))))}</span>`:''}</div>${roleSelect('data-member-role',id,'',true)}<span></span></div>`).join('');
+}
+async function runUserSearch(q){
+  const box=$('#userResults');if(!box||!S.user)return;
+  let list=[];try{list=await S.user.search(q);}catch(e){}
+  if($('#userSearch')&&$('#userSearch').value!==q&&q!=='')return;
+  list.forEach(p=>{S.profiles[p.id]={name:p.name,avatarUrl:p.avatarUrl,guest:p.guest};});
+  if(!list.length){box.innerHTML=q?'<p class="hint" style="margin:6px 0 0">لا توجد نتائج. اطلب من الشخص يفتح لينك الأداة ويسجّل دخول بحساب Google مرة، وبعدها هيظهر هنا.</p>':'';return;}
+  box.innerHTML=list.map(p=>{const m=S.members[p.id];const own=S.me.isOwner&&p.id===S.me.id;
+    return `<div class="urow"><div class="who"><img class="av sm" src="${esc(p.avatarUrl)}" alt=""><span>${esc(p.name)}</span>${p.guest?'<span class="tag">ضيف</span>':''}</div>${own?'<span class="muted" style="font-size:13px">المالك</span>':roleSelect('data-member-role',p.id,m?m.role:'',!m)}<span></span></div>`;}).join('');
+}
+function setPath(obj,path,val){const ks=path.split('.');let o=obj;for(let i=0;i<ks.length-1;i++){const k=ks[i];if(o[k]==null)o[k]={};o=o[k];}o[ks[ks.length-1]]=val;}
+function settingsAct(a){
+  const d=S.ui.set.draft;const [k,arg]=a.split(':');
+  if(k==='addType')d.bookingTypes.push({id:rid('t'),name:'',needsMfg:false,dept:''});
+  if(k==='delType')d.bookingTypes.splice(+arg,1);
+  if(k==='addCar'){const i=$('#sCarNew');const v=i&&i.value.trim();if(v&&!d.carTypes.includes(v))d.carTypes.push(v);}
+  if(k==='delCar')d.carTypes.splice(+arg,1);
+  if(k==='addField')d.customFields.push({id:rid('f'),label:'',type:'text',options:[],showInList:false});
+  if(k==='delField')d.customFields.splice(+arg,1);
+  if(k==='addDept')d.departments.push({id:rid('d'),name:'',limit:4});
+  if(k==='delDept')d.departments.splice(+arg,1);
+  if(k==='addTpl')d.waTemplates.push({id:rid('w'),name:'',text:''});
+  if(k==='delTpl')d.waTemplates.splice(+arg,1);
+  if(k==='addRole'){const key=rid('r');d.roles[key]={name:'دور جديد',perms:{}};d.roleOrder.push(key);}
+  if(k==='delRole'&&arg!=='admin'){delete d.roles[arg];d.roleOrder=d.roleOrder.filter(x=>x!==arg);if(d.defaultRole===arg)d.defaultRole='';}
+  renderSettings();
+  if(k==='addCar'){const i=$('#sCarNew');i&&i.focus();}
+  if(k==='addType'||k==='addField'||k==='addRole'||k==='addDept'||k==='addTpl'){const ins=$('#modal .m-body').querySelectorAll('input[type="text"]');const l=ins[ins.length-(k==='addField'?2:1)];l&&l.focus();}
+}
+async function saveSettings(){
+  const d=JSON.parse(JSON.stringify(S.ui.set.draft));
+  d.branchName=String(d.branchName||'').trim();
+  d.departments=(d.departments||[]).map(x=>({id:x.id,name:String(x.name||'').trim(),limit:Math.max(1,parseInt(x.limit,10)||4)})).filter(x=>x.name);
+  if(!d.departments.length){toast('أضف قسمًا واحدًا على الأقل.','err');return;}
+  d.bookingTypes=d.bookingTypes.map(t=>({id:t.id,name:String(t.name||'').trim(),needsMfg:!!t.needsMfg,dept:d.departments.some(x=>x.id===t.dept)?t.dept:''})).filter(t=>t.name);
+  if(!d.bookingTypes.length){toast('أضف نوع حجز واحد على الأقل.','err');return;}
+  d.customFields=d.customFields.map(f=>({id:f.id,label:String(f.label||'').trim(),type:f.type||'text',options:f.type==='select'?(Array.isArray(f.options)?f.options:[]).map(x=>String(x).trim()).filter(Boolean):[],showInList:!!f.showInList})).filter(f=>f.label);
+  d.carTypes=[...new Set(d.carTypes.map(x=>String(x).trim()).filter(Boolean))];
+  d.waTemplates=(d.waTemplates||[]).map(x=>({id:x.id,name:String(x.name||'').trim(),text:String(x.text||'').trim()})).filter(x=>x.name&&x.text);
+  const rfw=d.receiveFlow||{};
+  const flow={workOrderField:d.customFields.some(f=>f.id===rfw.workOrderField&&(f.type==='text'||f.type==='number'))?rfw.workOrderField:'',reportField:d.customFields.some(f=>f.id===rfw.reportField&&f.type==='file')?rfw.reportField:'',requireReport:!!rfw.requireReport};
+  d.roles.admin={name:String(d.roles.admin.name||'مدير').trim()||'مدير',perms:allPerms()};
+  d.roleOrder.forEach(k=>{const r=d.roles[k];r.name=String(r.name||'').trim()||'دور بدون اسم';const p={};PERMS.forEach(x=>{if((r.perms||{})[x[0]])p[x[0]]=true;});r.perms=k==='admin'?allPerms():p;});
+  const ok=await write(()=>S.db.doc('config/main').set({branchName:d.branchName,deptLimit:4,departments:d.departments,receiveFlow:flow,waTemplates:d.waTemplates,defaultRole:d.defaultRole||'',bookingTypes:d.bookingTypes,carTypes:d.carTypes,customFields:d.customFields,roleOrder:d.roleOrder,roles:d.roles,updatedAt:new Date().toISOString(),updatedBy:S.me.id||null}),'admin');
+  if(ok){toast('تم حفظ الإعدادات');S.ui.set.draft=JSON.parse(JSON.stringify(d));renderSettings();}
+}
+
+/* ---------- export ---------- */
+async function exportCsv(){
+  if(!S.dl){toast('التصدير غير متاح في هذا العرض.','err');return;}
+  const c=cfg(),g=GROUPS.find(x=>x.k===S.ui.status)||GROUPS[0];
+  const rows=sortRows(scopedBase().filter(g.test));
+  if(!rows.length){toast('لا توجد حجوزات في العرض الحالي للتصدير.','err');return;}
+  const cell=v=>{v=v==null?'':String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const head=['رقم الحجز','القسم','نوع الحجز','اسم العميل','رقم التليفون','اليوم','التاريخ','وقت استلام السيارة (المحدد)','وقت الاستلام الفعلي','موعد التسليم (المحدد)','وقت التسليم الفعلي','نوع السيارة','تأكيد طلب التصنيع','القائم بالحجز','الحالة','مرات التأجيل','الموافقة'].concat(c.customFields.map(f=>f.label)).concat(['أخرى']);
+  const lines=[head.map(cell).join(',')];
+  rows.forEach(b=>{lines.push([b.code,deptNames(b).join('، '),typeNames(b).join('، '),b.customerName,'="'+(b.phone||'')+'"',dayName(b.date),b.date,fmtTime(b.receiveTime),b.actualReceivedAt?fmtStamp(b.actualReceivedAt):'',(b.deliveryDate||'')+(b.deliveryTime?' '+fmtTime(b.deliveryTime):''),b.actualDeliveredAt?fmtStamp(b.actualDeliveredAt):'',b.carType,b.mfgConfirmed?'نعم':(needsMfg(b)?'لم يتم':'لا يحتاج'),nameOf(b.bookedBy),STATUS[b.status]||b.status,b.postponeCount||0,({pending:'بانتظار الموافقة',approved:'تمت الموافقة',rejected:'مرفوض'})[b.approval]||''].concat(c.customFields.map(f=>fmtField(f,b.extra&&b.extra[f.id]))).concat([b.other]).map(cell).join(','));});
+  const label=S.ui.q?'search':S.ui.scope==='day'?S.ui.date:S.ui.scope==='week'?'week-'+weekStart(S.ui.date):'all';
+  try{await S.dl.save({filename:'bookings-'+label+'.csv',data:'﻿'+lines.join('\r\n')});toast('تم التصدير');}
+  catch(e){if(e&&e.code==='declined')return;if(e&&(e.code==='unavailable'||e.code==='not_granted'))toast('التصدير غير متاح في هذا العرض.','err');else toast('تعذّر التصدير. حاول مرة أخرى.','err');}
+}
+
+/* ---------- department dashboard ---------- */
+/* ---------- CEO dashboard ---------- */
+const EX_RANGES=[['7','آخر 7 أيام'],['30','آخر 30 يوم'],['month','هذا الشهر'],['prev','الشهر الماضي'],['90','آخر 90 يوم']];
+const EX_CATS=[
+  {k:'del',label:'تم التسليم',test:b=>b.status==='delivered'},
+  {k:'in',label:'داخل الفرع',test:b=>b.status==='arrived'||b.status==='received'||b.status==='ready'},
+  {k:'up',label:'محجوز — لم يصل',test:b=>b.status==='booked'||b.status==='confirmed'||(b.status==='postponed'&&!b.noDate)},
+  {k:'ns',label:'لم يحضر',test:b=>b.status==='noshow'},
+  {k:'off',label:'ملغي أو اعتذر',test:b=>b.status==='cancelled'||(b.status==='postponed'&&!!b.noDate)}
+];
+function exRange(){
+  const k=S.ui.exR||'30',t=todayStr(),d=parseYmd(t);let a,e;
+  if(k==='month'){a=ymd(new Date(d.getFullYear(),d.getMonth(),1));e=ymd(new Date(d.getFullYear(),d.getMonth()+1,0));}
+  else if(k==='prev'){a=ymd(new Date(d.getFullYear(),d.getMonth()-1,1));e=ymd(new Date(d.getFullYear(),d.getMonth(),0));}
+  else{a=addDays(t,-(+k-1));e=t;}
+  const len=daysBetween(a,e)+1;
+  return {s:a,e,len,ps:addDays(a,-len),pe:addDays(a,-1)};
+}
+function ensureRange(a,e){
+  if(!S.db||!S.windowFull)return;const key='r:'+a+':'+e;if(S.extra[key])return;
+  const last=S.bookings[S.bookings.length-1];if(!last||a>=last.date)return;
+  S.extra[key]=[];
+  S.db.collection('bookings').where('date','>=',a).where('date','<=',e).limit(1000).get().then(q=>{S.extra[key]=q.docs.map(x=>Object.assign({id:x.id},x.data()));renderAll();}).catch(()=>{delete S.extra[key];});
+}
+const attended=b=>!!(b.arrivedAt||b.actualReceivedAt)||['arrived','received','ready','delivered'].includes(b.status);
+function exMetrics(list,today){
+  const past=list.filter(b=>b.date<=today);
+  const att=past.filter(attended).length,ns=past.filter(b=>b.status==='noshow').length;
+  const del=list.filter(b=>b.status==='delivered'||b.actualDeliveredAt);
+  const planned=del.filter(b=>b.actualDeliveredAt&&b.deliveryDate);
+  const onTime=planned.filter(b=>{const d=parseYmd(b.deliveryDate);if(b.deliveryTime){const p=b.deliveryTime.split(':').map(Number);d.setHours(p[0],p[1],59);}else d.setHours(23,59,59);return new Date(b.actualDeliveredAt)<=d;}).length;
+  const durs=del.filter(b=>b.actualReceivedAt&&b.actualDeliveredAt).map(b=>(new Date(b.actualDeliveredAt)-new Date(b.actualReceivedAt))/36e5).filter(h=>h>=0&&h<1440);
+  return {total:list.length,attended:att,noshow:ns,attRate:att+ns?att/(att+ns):null,delivered:del.length,onTimeRate:planned.length?onTime/planned.length:null,
+    avgH:durs.length?durs.reduce((x,y)=>x+y,0)/durs.length:null,postponed:list.filter(b=>(b.postponeCount||0)>0||b.noDate).length,cancelled:list.filter(b=>b.status==='cancelled').length,
+    confirmed:list.filter(b=>b.confirmedAt||b.status==='confirmed'||(b.history||[]).some(h=>h.type==='confirmed')).length,received:list.filter(b=>b.actualReceivedAt).length};
+}
+const pct=p=>p==null?'—':Math.round(p*100)+'%';
+const fmtDur=h=>h==null?'—':h<24?(Math.round(h*10)/10)+' ساعة':(Math.round(h/24*10)/10)+' يوم';
+function deltaHTML(cur,prev,upGood,pp){
+  if(cur==null||prev==null)return '';
+  let d,txt;
+  if(pp){d=Math.round((cur-prev)*100);txt=Math.abs(d)+' نقطة';}
+  else{if(!prev)return '';d=Math.round((cur-prev)/prev*100);txt=Math.abs(d)+'%';}
+  if(!d)return '<span class="dl">بدون تغيير <small>عن الفترة السابقة</small></span>';
+  const good=(d>0)===upGood;
+  return `<span class="dl ${good?'good':'bad'}">${d>0?'▲ +':'▼ −'}${txt} <small>عن الفترة السابقة</small></span>`;
+}
+function niceStep(max){const raw=max/4,mag=Math.pow(10,Math.floor(Math.log10(raw||1))),n=raw/mag;return Math.max(1,Math.round((n<=1?1:n<=2?2:n<=5?5:10)*mag));}
+function hbarsHTML(rows){
+  const max=Math.max(1,...rows.map(r=>r.n));
+  return `<div class="hb">${rows.map(r=>`<div class="hb-row"${r.tip?` data-tipt="${esc(r.tip)}"`:''}><span class="hb-l" title="${esc(r.label)}">${esc(r.label)}</span><span class="hb-t"><i style="width:${r.n?Math.max(1.5,r.n/max*100):0}%"></i></span><span class="hb-v">${r.n}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></div>`).join('')}</div>`;
+}
+function stackSVG(W){
+  const D=S.exDays||[];if(!D.length)return '';
+  const H=236,pt=14,pb=28,pr=34,pl=4,pw=Math.max(120,W-pr-pl),ph=H-pt-pb;
+  const max=Math.max(1,...D.map(x=>x.total)),step=niceStep(max),top=Math.ceil(max/step)*step;
+  const y=v=>pt+ph-(v/top*ph),band=pw/D.length,bw=Math.max(2,Math.min(24,band*0.62)),today=todayStr();
+  let g='';
+  for(let v=0;v<=top;v+=step){const yy=Math.round(y(v))+.5;g+=`<line x1="${pl}" x2="${pl+pw}" y1="${yy}" y2="${yy}" class="${v?'gl':'bl'}"/><text x="${pl+pw+6}" y="${yy+4}" class="tk">${v}</text>`;}
+  const every=Math.max(1,Math.ceil(D.length/Math.max(1,Math.floor(pw/30))));
+  D.forEach((x,i)=>{
+    const xc=pl+pw-band*(i+0.5),x0=xc-bw/2;let acc=0;const segs=[];
+    x.parts.forEach((v,j)=>{if(v)segs.push([j,v]);});
+    segs.forEach(([j,v],si)=>{
+      const yb=y(acc)-(acc?2:0),yt=y(acc+v);acc+=v;const h=yb-yt;if(h<=0.5)return;
+      const cls='s-'+EX_CATS[j].k;
+      if(si===segs.length-1){const r=Math.min(4,bw/2,h);g+=`<path class="${cls}" d="M${x0.toFixed(1)},${yb.toFixed(1)} V${(yt+r).toFixed(1)} Q${x0.toFixed(1)},${yt.toFixed(1)} ${(x0+r).toFixed(1)},${yt.toFixed(1)} H${(x0+bw-r).toFixed(1)} Q${(x0+bw).toFixed(1)},${yt.toFixed(1)} ${(x0+bw).toFixed(1)},${(yt+r).toFixed(1)} V${yb.toFixed(1)} Z"/>`;}
+      else g+=`<rect class="${cls}" x="${x0.toFixed(1)}" y="${yt.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"/>`;
+    });
+    if(i%every===0||x.d===today)g+=`<text x="${xc.toFixed(1)}" y="${H-9}" text-anchor="middle" class="xl${x.d===today?' today':''}">${parseYmd(x.d).getDate()}</text>`;
+    g+=`<rect class="hit" x="${(xc-band/2).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${ph}" data-tipi="${i}"/>`;
+  });
+  return `<svg class="ex-svg" viewBox="0 0 ${pl+pw+pr} ${H}" role="img" aria-label="الحجوزات يوميًا حسب النتيجة">${g}</svg>`;
+}
+function tipDay(i){
+  const x=(S.exDays||[])[i];if(!x)return '';
+  return `<b>${esc(dayName(x.d)+' '+dm(x.d))}</b><div class="tr"><span>الإجمالي</span><b>${x.total}</b></div>`+EX_CATS.map((k,j)=>x.parts[j]?`<div class="tr"><span><i class="sw" style="background:var(--c-${k.k})"></i>${k.label}</span><b>${x.parts[j]}</b></div>`:'').join('');
+}
+function renderExec(){
+  const el=$('#viewExec');
+  if(S.state==='loading'||(S.state==='ready'&&!S.bFirst)){el.innerHTML='<div class="loading-row">جارٍ تحميل البيانات…</div>';return;}
+  const c=cfg(),R=exRange(),today=todayStr();ensureRange(R.ps,R.e);
+  const all=allBookings(),cur=all.filter(b=>b.date>=R.s&&b.date<=R.e),prev=all.filter(b=>b.date>=R.ps&&b.date<=R.pe);
+  const m=exMetrics(cur,today),pm=exMetrics(prev,today),pend=all.filter(isPending).length;
+  const days=[];for(let i=0;i<R.len;i++)days.push(addDays(R.s,i));
+  S.exDays=days.map(d=>{const bs=cur.filter(b=>b.date===d);return {d,total:bs.length,parts:EX_CATS.map(k=>bs.filter(k.test).length)};});
+  const dep=c.departments.map(dp=>{const bs=cur.filter(b=>counts(b)&&deptsOf(b).includes(dp.id));const full=days.filter(d=>bs.filter(b=>b.date===d).length>=deptLimit(dp.id)).length;
+    return {label:dp.name,n:bs.length,sub:full?full+' يوم ممتلئ':'',tip:dp.name+': '+bs.length+' حجز\nالحد اليومي '+deptLimit(dp.id)+(full?' — وصل للحد '+full+' يوم':'')};}).sort((a,b)=>b.n-a.n);
+  const tmap={};cur.filter(counts).forEach(b=>typesOf(b).forEach(t=>{tmap[t]=(tmap[t]||0)+1;}));
+  let types=Object.keys(tmap).map(id=>{const t=c.bookingTypes.find(x=>x.id===id);const dp=t?typeDept(t.id):'';return {label:t?t.name:'نوع محذوف',n:tmap[id],sub:dp?deptName(dp):''};}).sort((a,b)=>b.n-a.n);
+  if(types.length>8){const rest=types.slice(7);types=types.slice(0,7).concat([{label:'باقي الأنواع ('+rest.length+')',n:rest.reduce((x,y)=>x+y.n,0)}]);}
+  const smap={};cur.forEach(b=>{const k=b.bookedBy||'—';(smap[k]=smap[k]||[]).push(b);});
+  const sales=Object.keys(smap).map(id=>{const mm=exMetrics(smap[id],today);return {id,total:smap[id].length,att:mm.attended,ns:mm.noshow,rate:mm.attRate,off:mm.cancelled+mm.postponed};}).sort((a,b)=>b.total-a.total);
+  const smax=Math.max(1,...sales.map(x=>x.total));
+  const fun=[['الحجوزات',m.total],['أكد الحضور بالتليفون',m.confirmed],['حضر العميل',m.attended],['تم استلام السيارة',m.received],['تم التسليم',m.delivered]].map(([l,n])=>({label:l,n,sub:m.total?pct(n/m.total):''}));
+  const rl=(EX_RANGES.find(x=>x[0]===(S.ui.exR||'30'))||EX_RANGES[1])[1];
+  const empty='<p class="card-empty">لا توجد حجوزات في هذه الفترة.</p>';
+  el.innerHTML=`
+    <div class="dash-head">
+      <div><h2>لوحة الإدارة</h2><p>ملخص الحجوزات من ${esc(dayName(R.s)+' '+dm(R.s))} إلى ${esc(dayName(R.e)+' '+dm(R.e))}، حسب يوم الحجز. المقارنة بنفس عدد الأيام قبلها.</p></div>
+      <div class="dash-ctl"><div class="seg" role="tablist" aria-label="الفترة">${EX_RANGES.map(r=>`<button type="button" data-ex-r="${r[0]}" class="${(S.ui.exR||'30')===r[0]?'on':''}">${r[1]}</button>`).join('')}</div></div>
+    </div>
+    <div class="ex-kpis">
+      <div class="kpi hero"><span class="kl">الحجوزات — ${esc(rl)}</span><b class="big">${m.total.toLocaleString('en')}</b>${deltaHTML(m.total,pm.total,true)}</div>
+      <div class="kpi"><span class="kl">نسبة الحضور</span><b>${pct(m.attRate)}</b><small class="of">${m.attended} حضر · ${m.noshow} لم يحضر</small>${deltaHTML(m.attRate,pm.attRate,true,true)}</div>
+      <div class="kpi"><span class="kl">التسليم في الموعد</span><b>${pct(m.onTimeRate)}</b><small class="of">${m.delivered} عربية اتسلمت</small>${deltaHTML(m.onTimeRate,pm.onTimeRate,true,true)}</div>
+      <div class="kpi"><span class="kl">متوسط مدة بقاء العربية</span><b>${fmtDur(m.avgH)}</b><small class="of">من الاستلام للتسليم</small>${deltaHTML(m.avgH,pm.avgH,false)}</div>
+      <div class="kpi"><span class="kl">لم يحضر</span><b>${m.noshow}</b>${deltaHTML(m.noshow,pm.noshow,false)}</div>
+      <div class="kpi"><span class="kl">اعتذار وتأجيل</span><b>${m.postponed}</b><small class="of">${m.cancelled} ملغي</small>${deltaHTML(m.postponed,pm.postponed,false)}</div>
+      <div class="kpi ${pend?'bad':''}"><span class="kl">بانتظار الموافقة الآن</span><b>${pend}</b><small class="of">حجوزات فوق حد القسم</small></div>
+    </div>
+    <div class="card">
+      <h3><span>الحجوزات يوميًا حسب النتيجة</span><button type="button" class="link" data-ex-table="1">${S.ui.exTable?'عرض كرسم':'عرض كجدول'}</button></h3>
+      ${cur.length?(S.ui.exTable
+        ?`<div class="tbl-wrap"><table class="ex-tbl"><thead><tr><th scope="col">اليوم</th><th scope="col">الإجمالي</th>${EX_CATS.map(k=>`<th scope="col">${k.label}</th>`).join('')}</tr></thead><tbody>${S.exDays.slice().reverse().filter(x=>x.total).map(x=>`<tr><th scope="row">${esc(dayName(x.d)+' '+dm(x.d))}</th><td>${x.total}</td>${x.parts.map(p=>`<td>${p||'·'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+        :`<div class="legend2">${EX_CATS.map(k=>`<span><i class="sw" style="background:var(--c-${k.k})"></i>${k.label}</span>`).join('')}</div><div class="ex-chart" id="exStack"></div>`):empty}
+    </div>
+    <div class="ex-grid">
+      <div class="card"><h3><span>رحلة العميل</span><span class="hint">من الحجز للتسليم</span></h3><div class="card-b">${m.total?hbarsHTML(fun):empty}</div></div>
+      <div class="card"><h3><span>الأقسام</span><span class="hint">عدد الحجوزات والأيام اللي وصل فيها للحد</span></h3><div class="card-b">${dep.some(x=>x.n)?hbarsHTML(dep):empty}</div></div>
+    </div>
+    <div class="ex-grid w">
+      <div class="card"><h3><span>أنواع الحجز</span></h3><div class="card-b">${types.length?hbarsHTML(types):empty}</div></div>
+      <div class="card"><h3><span>أداء فريق المبيعات</span><span class="hint">حسب القائم بالحجز</span></h3>${sales.length?`<div class="tbl-wrap"><table class="ex-tbl"><thead><tr><th scope="col">القائم بالحجز</th><th scope="col">الحجوزات</th><th scope="col">حضر</th><th scope="col">لم يحضر</th><th scope="col">نسبة الحضور</th><th scope="col">اعتذر أو ألغي</th></tr></thead><tbody>${sales.map(x=>`<tr><th scope="row"><span class="who">${x.id==='—'?'<span class="muted">غير محدد</span>':personHTML(x.id)}</span></th><td><span class="cellbar"><b>${x.total}</b><i style="width:${Math.round(x.total/smax*80)}px"></i></span></td><td>${x.att}</td><td>${x.ns}</td><td>${pct(x.rate)}</td><td>${x.off}</td></tr>`).join('')}</tbody></table></div>`:empty}</div>
+    </div>`;
+  const box=$('#exStack');if(box)box.innerHTML=stackSVG(Math.max(300,box.clientWidth-20));
+}
+function setView(v){
+  S.ui.view=(v==='dashboard'||v==='executive')?v:'bookings';
+  try{const h=S.ui.view==='bookings'?'':'#'+S.ui.view;if((location.hash||'')!==h)location.hash=h;}catch(e){}
+  renderAll();try{window.scrollTo(0,0);}catch(e){}
+}
+function renderDash(){
+  const el=$('#viewDash'),c=cfg(),D=S.ui.dash,today=todayStr();
+  if(S.state==='loading'||(S.state==='ready'&&!S.bFirst)){el.innerHTML='<div class="loading-row">جارٍ تحميل البيانات…</div>';return;}
+  const days=Array.from({length:D.len},(_,i)=>addDays(D.start,i)),first=days[0],last=days[days.length-1];
+  const cell={};
+  for(const b of allBookings()){if(!counts(b)||b.date<first||b.date>last)continue;for(const dp of deptsOf(b)){const k=b.date+'|'+dp;const o=cell[k]||(cell[k]={n:0,p:0});o.n++;if(isPending(b))o.p++;}}
+  const get=(d,dp)=>cell[d+'|'+dp]||{n:0,p:0};
+  const fullDays=days.map(d=>({d,items:c.departments.map(dp=>{const g=get(d,dp.id);return {dp,n:g.n,p:g.p,lim:deptLimit(dp.id)};}).filter(x=>x.n>=x.lim)})).filter(x=>x.items.length);
+  const slots=fullDays.reduce((a,x)=>a+x.items.length,0);
+  const pend=sortRows(allBookings().filter(isPending));
+  const busiest=c.departments.map(dp=>({dp,full:fullDays.filter(x=>x.items.some(i=>i.dp.id===dp.id)).length,n:days.reduce((a,d)=>a+get(d,dp.id).n,0)})).sort((a,b)=>b.full-a.full||b.n-a.n)[0];
+  const arrowR='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const arrowL='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const hdr=days.map(d=>`<th scope="col" class="${d===today?'today':''}"><span>${esc(dayName(d))}</span><b>${parseYmd(d).getDate()}</b></th>`).join('');
+  const rows=c.departments.map(dp=>{const lim=deptLimit(dp.id);
+    return `<tr><th scope="row"><span>${esc(dp.name)}</span><small>الحد ${lim} يوميًا</small></th>${days.map(d=>{const g=get(d,dp.id);const st=g.n>lim?'over':g.n>=lim?'full':g.n?'some':'zero';const mix=st==='some'?Math.round(8+30*g.n/lim)+'%':'0%';
+      return `<td><button type="button" class="hc ${st} ${d===today?'today':''}" style="--mix:${mix}" data-goto-day="${d}" data-goto-dept="${esc(dp.id)}" aria-label="${esc(dp.name+' — '+dayName(d)+' '+dm(d)+': '+g.n+' من '+lim+(g.p?' — '+g.p+' بانتظار الموافقة':''))}"><b>${g.n||'·'}</b>${st==='full'?'<i>ممتلئ</i>':st==='over'?`<i>+${g.n-lim} فوق الحد</i>`:''}${g.p?`<em>${g.p} بانتظار موافقة</em>`:''}</button></td>`;}).join('')}</tr>`;}).join('');
+  el.innerHTML=`
+    <div class="dash-head">
+      <div><h2>لوحة الأقسام</h2><p>عدد العملاء في كل قسم يوميًا مقابل حده. القسم «ممتلئ» لما يوصل للحد، وأي حجز زيادة فيه يحتاج موافقة.</p></div>
+      <div class="dash-ctl">
+        <button type="button" class="btn icon ghost" data-dash-shift="-1" aria-label="الفترة السابقة">${arrowR}</button>
+        <span class="dash-range">${esc(dm(first)+' – '+dm(last))}</span>
+        <button type="button" class="btn icon ghost" data-dash-shift="1" aria-label="الفترة التالية">${arrowL}</button>
+        <button type="button" class="btn sm" data-dash-today="1">من اليوم</button>
+        <div class="seg">${[7,14,30].map(n=>`<button type="button" data-dash-len="${n}" class="${D.len===n?'on':''}">${n===7?'أسبوع':n===14?'أسبوعين':'30 يوم'}</button>`).join('')}</div>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi ${fullDays.length?'warn':''}"><b>${fullDays.length}</b><span>يوم فيه قسم ممتلئ</span></div>
+      <div class="kpi ${slots?'warn':''}"><b>${slots}</b><span>مرة وصل فيها قسم للحد</span></div>
+      <div class="kpi ${pend.length?'bad':''}"><b>${pend.length}</b><span>حجز بانتظار الموافقة</span></div>
+      <div class="kpi"><b class="txt">${busiest&&busiest.n?esc(busiest.dp.name):'—'}</b><span>${busiest&&busiest.n?'الأكثر ضغطًا: '+busiest.n+' عميل · '+busiest.full+' يوم ممتلئ':'أكثر قسم ضغطًا'}</span></div>
+    </div>
+    ${c.departments.length?`<div class="heat-wrap"><table class="heat"><thead><tr><th scope="col">القسم</th>${hdr}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="legend"><span><i class="lg some"></i>عدد العملاء (كل ما زاد اللون زاد الضغط)</span><span><i class="lg full"></i>ممتلئ: وصل للحد</span><span><i class="lg over"></i>فوق الحد بموافقة أو بانتظارها</span><span>اضغط أي خانة لعرض حجوزاتها</span></div>`:emptyHTML('لا توجد أقسام','أضف الأقسام وحدّها اليومي من الإعدادات ← الأقسام.')}
+    <div class="dash-cols">
+      <div class="card"><h3>الأيام الممتلئة <span>${fullDays.length}</span></h3>${fullDays.length?fullDays.map(x=>`<button type="button" class="fd" data-goto-day="${x.d}"><span class="fd-d"><b>${esc(dayName(x.d))}${x.d===today?' · اليوم':''}</b><small>${esc(dm(x.d))}</small></span><span class="fd-t">${x.items.map(i=>`<span class="flag ${i.n>i.lim?'bad':'warn'}">${esc(i.dp.name)} ${i.n}/${i.lim}</span>`).join('')}</span></button>`).join(''):'<p class="card-empty">لا توجد أيام ممتلئة في هذه الفترة.</p>'}</div>
+      <div class="card"><h3>بانتظار الموافقة <span>${pend.length}</span></h3>${pend.length?pend.map(b=>`<div class="ap"><button type="button" class="ap-main" data-open="${esc(b.id)}"><b>${esc(b.customerName)}</b><small>${esc(dayName(b.date)+' '+dm(b.date))}${b.receiveTime?' · '+esc(fmtTime(b.receiveTime)):''} · ${esc(deptNames(b).join('، '))}</small>${(b.overDepts||[]).length?`<small class="bad">${esc(b.overDepts.map(deptName).join('، '))} ممتلئ</small>`:''}</button>${can('approve')?`<div class="ap-act"><button type="button" class="btn sm primary" data-approve="${esc(b.id)}">موافقة</button><button type="button" class="btn sm danger" data-open-reject="${esc(b.id)}">رفض</button></div>`:''}</div>`).join(''):'<p class="card-empty">لا توجد حجوزات بانتظار الموافقة.</p>'}</div>
+    </div>`;
+}
+
+/* ---------- toast ---------- */
+function toast(msg,kind,action){
+  const t=document.createElement('div');t.className='toast'+(kind==='err'?' err':'');
+  const s=document.createElement('span');s.textContent=msg;t.appendChild(s);
+  if(action){const b=document.createElement('button');b.type='button';b.textContent=action.label;b.onclick=()=>{t.remove();action.fn();};t.appendChild(b);}
+  $('#toasts').appendChild(t);setTimeout(()=>t.remove(),action?7000:kind==='err'?6000:3200);
+}
+
+/* ================= events ================= */
+function setDate(d){S.ui.date=d;if(S.ui.scope==='all')S.ui.scope='day';renderAll();}
+function bindStatic(){
+  $('#prevDay').onclick=()=>{S.ui.date=addDays(S.ui.date,-1);if(S.ui.scope!=='week')S.ui.scope='day';renderAll();};
+  $('#nextDay').onclick=()=>{S.ui.date=addDays(S.ui.date,1);if(S.ui.scope!=='week')S.ui.scope='day';renderAll();};
+  $('#btnToday').onclick=()=>{S.ui.q='';$('#q').value='';setDate(todayStr());};
+  $('#datePick').onchange=e=>{if(e.target.value)setDate(e.target.value);};
+  $('#btnSettings').onclick=openSettings;
+  $('#btnExport').onclick=exportCsv;
+  $('#typeFilter').onchange=e=>{S.ui.type=e.target.value;renderCore();};
+  $('#deptFilter').onchange=e=>{S.ui.dept=e.target.value;renderCore();};
+  let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{S.ui.q=e.target.value.trim();renderCore();},150);};
+  $('#scopeSeg').onclick=e=>{const b=e.target.closest('[data-scope]');if(!b)return;S.ui.scope=b.dataset.scope;S.ui.q='';$('#q').value='';try{localStorage.setItem('bk_scope',S.ui.scope);}catch(_){}renderCore();};
+  $('#modal').addEventListener('submit',e=>{e.preventDefault();if(S.ui.form)saveForm();});
+  $('#modal').addEventListener('input',e=>{
+    const t=e.target;
+    if(S.ui.form){
+      if(t.closest&&t.closest('.ms')){onMsChange(t);return;}
+      if(t.id==='fDate'){const old=S.ui.form.lastDate,dd=$('#fDelDate');if(dd&&(!dd.value||dd.value===old))dd.value=t.value;S.ui.form.lastDate=t.value;}
+      if(t.id==='fDate'||t.id==='fPhone')updateFormHints();
+      return;
+    }
+    if(S.ui.set){
+      if(t.id==='userSearch'){runUserSearch(t.value.trim());return;}
+      if(t.dataset&&t.dataset.bind){let v=t.type==='checkbox'?t.checked:t.value;const k=t.dataset.kind;if(k==='num')v=Number(v);if(k==='list')v=String(v).split(/[،,]/).map(x=>x.trim()).filter(Boolean);
+        setPath(S.ui.set.draft,t.dataset.bind,v);if(t.dataset.rerender)renderSettings();}
+    }
+  });
+  $('#modal').addEventListener('change',async e=>{
+    const t=e.target;
+    if(t.matches('[data-member-role]')){const id=t.getAttribute('data-member-role'),role=t.value;if(!role)return;
+      const ok=await write(()=>S.db.doc('members/'+id).set({role,addedBy:S.me.id||null,addedAt:new Date().toISOString()}),'admin');
+      if(ok)toast('تم تحديد الدور: '+nameOf(id)+' — '+cfg().roles[role].name);}
+  });
+  $('#modal').addEventListener('focusin',e=>{if(e.target.id==='userSearch'&&!e.target.value)runUserSearch('');});
+  $('#modal').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='sCarNew'){e.preventDefault();settingsAct('addCar');}});
+  $('#drawer').addEventListener('input',e=>{if(e.target.id==='waText'){const a=$('#waLink'),b=findB(S.ui.openId);if(a&&b)a.href=waUrl(waNum(b.phone),e.target.value);return;}if(e.target.id==='pWO'){const b=findB(S.ui.openId);if(!b)return;const wo=e.target.value.trim();const w=$('#rptWrap');if(w)w.hidden=!wo&&!getRpt(b).length;const btn=$('#rcvBtn');if(btn){btn.textContent=rcvLabel(b,wo);btn.disabled=b.status==='arrived'&&!wo;}}});
+  $('#drawer').addEventListener('change',e=>{if(e.target.name==='pMode'){const r=$('#pDateRow');if(r)r.hidden=e.target.value==='nodate';return;}if(e.target.id==='pDate'){const h=$('#pDateHint');const d=e.target.value;const b=findB(S.ui.openId);if(h&&d&&b)h.innerHTML=deptHintHTML(d,deptsOf(b),b.id);}});
+
+  document.addEventListener('click',async e=>{
+    if(!e.target.closest('.ms'))closeMs();
+    const t=e.target.closest('[data-ms-more],[data-ex-r],[data-ex-table],[data-wa],[data-wa-tpl],[data-wa-open],[data-wa-copy],[data-view-img],[data-dl],[data-rm-file],[data-view],[data-ms-toggle],[data-goto-day],[data-approve],[data-open-reject],[data-dash-len],[data-dash-shift],[data-dash-today],[data-quick],[data-open],[data-close],[data-act],[data-panel-ok],[data-panel-cancel],[data-copy],[data-day],[data-stat],[data-edit],[data-del],[data-del-ok],[data-del-cancel],[data-set-tab],[data-set-act],[data-set-save],[data-member-del],[data-goto],[data-new]');
+    if(!t)return;
+    const ds=t.dataset;
+    if(ds.view){setView(ds.view);return;}
+    if(ds.msToggle){const box=$('#'+ds.msToggle),pop=box.querySelector('.ms-pop');const open=pop.hidden;closeMs(ds.msToggle);if(open&&ds.msToggle==='msTypes')buildTypePop();pop.hidden=!open;t.setAttribute('aria-expanded',open?'true':'false');if(open){updateFormHints();const f=pop.querySelector('input');f&&f.focus();}return;}
+    if(ds.gotoDay){S.ui.q='';$('#q').value='';S.ui.date=ds.gotoDay;S.ui.scope='day';S.ui.status='all';S.ui.dept=ds.gotoDept||'all';setView('bookings');return;}
+    if(ds.approve){t.disabled=true;const id=ds.approve;const prev=await doAction(id,'approve',{});if(prev)toast(DONE.approve,'',{label:'تراجع',fn:()=>undo(id,prev)});else t.disabled=false;return;}
+    if(ds.openReject){openDrawer(ds.openReject);S.ui.act='reject';renderDrawer();setTimeout(()=>{const f=$('#pNote');f&&f.focus();},40);return;}
+    if(ds.dashLen){S.ui.dash.len=+ds.dashLen;renderCore();return;}
+    if(ds.dashShift){S.ui.dash.start=addDays(S.ui.dash.start,(+ds.dashShift)*S.ui.dash.len);renderCore();return;}
+    if(ds.dashToday){S.ui.dash.start=todayStr();renderCore();return;}
+    if(ds.msMore){if(S.ui.form){S.ui.form.showAllTypes=true;buildTypePop();}return;}
+    if(ds.exR){S.ui.exR=ds.exR;renderCore();return;}
+    if(ds.exTable){S.ui.exTable=!S.ui.exTable;renderCore();return;}
+    if(ds.wa){e.stopPropagation();const b=findB(ds.wa);if(!b)return;openDrawer(ds.wa);S.ui.waTpl=suggestTpl(b);S.ui.act='wa';renderDrawer();return;}
+    if(ds.waTpl){S.ui.waTpl=ds.waTpl;renderDrawer();return;}
+    if(ds.waOpen){const id=S.ui.openId,b=findB(id);toast('اتفتحت محادثة واتساب — اضغط «إرسال» هناك.');
+      if(b&&S.db){const nowIso=new Date().toISOString();write(()=>S.db.doc('bookings/'+id).update({updatedAt:nowIso,updatedBy:S.me.id||null,history:(b.history||[]).concat([{type:'wa',at:nowIso,by:S.me.id||null,note:ds.waOpen}])}));}
+      return;}
+    if(ds.waCopy){const ta=$('#waText');if(!ta)return;try{await navigator.clipboard.writeText(ta.value);toast('تم نسخ الرسالة');}catch(_){ta.focus();ta.select();toast('الرسالة متحددة — انسخها يدوي.');}return;}
+    if(ds.viewImg){$('#lbImg').src=fileUrl(findFile(ds.viewImg)||{id:ds.viewImg});$('#lightbox').hidden=false;return;}
+    if(ds.close==='lightbox'){$('#lightbox').hidden=true;$('#lbImg').removeAttribute('src');return;}
+    if(ds.dl){const f=findFile(ds.dl)||{name:'ملف',type:''};
+      try{const r=await fetch(fileUrl(findFile(ds.dl)||{id:ds.dl}));if(!r.ok)throw {code:'fetch'};const bl=await r.blob();const ty=f.type||bl.type;const ext=EXT[ty]||'pdf';let nm=(f.name||'ملف').replace(/[\\/:*?"<>|]+/g,'-');if(!new RegExp('\\.'+ext+'$','i').test(nm))nm=nm.replace(/\.[^.]+$/,'')+'.'+ext;
+        await S.dl.save({filename:nm,data:bl});}
+      catch(er){if(er&&er.code==='declined')return;try{window.open(fileUrl(findFile(ds.dl)||{id:ds.dl}),'_blank','noopener');}catch(_){toast('تعذّر تحميل الملف. جرّب «فتح».','err');}}
+      return;}
+    if(ds.rmFile){const id=S.ui.openId,b=findB(id);if(!b)return;const key=ds.rmFile+'|'+ds.field;
+      if(S.ui.rmArm!==key){S.ui.rmArm=key;renderDrawer();return;}
+      S.ui.rmArm=null;const rf=rptField();const fid=ds.field==='__rpt'?(rf?rf.id:null):ds.field;
+      const cur=fid?fileList(b,fid):(b.receiptReport||[]);const gone=cur.find(x=>x.id===ds.rmFile);const rest=cur.filter(x=>x.id!==ds.rmFile);
+      const nowIso=new Date().toISOString();const upd={updatedAt:nowIso,updatedBy:S.me.id||null,history:(b.history||[]).concat([{type:'file_removed',at:nowIso,by:S.me.id||null,note:gone?gone.name:''}])};
+      if(fid)upd.extra={[fid]:rest};else upd.receiptReport=rest;
+      const ok=await write(()=>S.db.doc('bookings/'+id).update(upd));
+      if(ok){toast('تمت إزالة الملف');if(S.assets)S.assets.delete(ds.rmFile).catch(()=>{});}
+      return;}
+    if(ds.quick&&ds.panel){e.stopPropagation();const id=ds.id,k=ds.quick;openDrawer(id);S.ui.noDateDef=k==='apolog';S.ui.act=k==='apolog'?'postpone':k;renderDrawer();setTimeout(()=>{const f=$('#drawer .panel #pWO')||$('#drawer .panel #pNote');f&&f.focus();},40);return;}
+    if(ds.quick){e.stopPropagation();t.disabled=true;const id=ds.id,k=ds.quick;const prev=await doAction(id,k,{});if(prev){toast(DONE[k],'',{label:'تراجع',fn:()=>undo(id,prev)});}else t.disabled=false;return;}
+    if(ds.new){openForm(null);return;}
+    if(ds.open){openDrawer(ds.open);return;}
+    if(ds.goto){openDrawer(ds.goto);return;}
+    if(ds.close==='drawer'){closeDrawer();return;}
+    if(ds.close==='modal'){closeModal();return;}
+    if(ds.day){S.ui.q='';$('#q').value='';S.ui.date=ds.day;S.ui.scope='day';renderAll();return;}
+    if(ds.stat){S.ui.status=ds.stat;renderCore();return;}
+    if(ds.act){
+      const k=ds.act,id=S.ui.openId;
+      if(k==='wa'){const b=findB(S.ui.openId);S.ui.waTpl=b?suggestTpl(b):null;}
+      if(['ready','reopen','mfg_on','mfg_off','approve','confirm'].includes(k)){t.disabled=true;const prev=await doAction(id,k,{});if(prev){toast(DONE[k],'',{label:'تراجع',fn:()=>undo(id,prev)});}S.ui.act=null;renderDrawer();return;}
+      S.ui.noDateDef=k==='apolog';S.ui.act=k==='apolog'?'postpone':k;S.ui.confirmDel=false;renderDrawer();setTimeout(()=>{const f=$('#drawer .panel #pWO')||$('#drawer .panel #pNote')||$('#drawer .panel input[type=file]');f&&f.focus();},30);return;
+    }
+    if(ds.panelCancel){S.ui.act=null;renderDrawer();return;}
+    if(ds.panelOk){
+      const k=ds.panelOk,id=S.ui.openId,note=($('#pNote')&&$('#pNote').value)||'';
+      const p={note};
+      if(k==='receive'||k==='deliver')p.time=$('#pTime').value;
+      if(k==='postpone'){const m=document.querySelector('#drawer input[name="pMode"]:checked');p.noDate=!!(m&&m.value==='nodate');if(!p.noDate){p.date=$('#pDate').value;p.t=$('#pT').value;if(!p.date){toast('اختر التاريخ الجديد.','err');return;}}}
+      if(k==='receive'||k==='attach'){
+        const b=findB(id);if(!b)return;p.files=$('#pFiles')?[...$('#pFiles').files]:[];
+        if(k==='attach'&&!p.files.length){toast('اختر ملفًا أولًا.','err');return;}
+        if(k==='receive'){
+          const wo=normDigits(($('#pWO')||{}).value||'').trim(),wf=woField();p.wo=wo;
+          if(!wo)p.files=[];
+          if(b.status==='arrived'&&!wo){toast('اكتب رقم أمر الشغل لتأكيد الاستلام.','err');$('#pWO').focus();return;}
+          if(wo&&wf&&wf.type==='number'&&!/^\d+$/.test(wo)){toast('رقم أمر الشغل لازم يكون أرقام فقط.','err');$('#pWO').focus();return;}
+          if(wo&&cfg().receiveFlow.requireReport&&!p.files.length&&!getRpt(b).length){toast('أرفق '+rptLabel()+' لتأكيد الاستلام.','err');return;}
+        }
+      }
+      if((k==='cancel'||k==='reject')&&!note.trim()){toast(k==='reject'?'اكتب سبب الرفض.':'اكتب سبب الإلغاء.','err');$('#pNote').focus();return;}
+      if(k==='note'&&!note.trim()){toast('اكتب الملاحظة أولًا.','err');return;}
+      t.disabled=true;
+      if(p.files&&p.files.length){const lbl=t.textContent;t.textContent='جارٍ رفع الملفات…';try{p.uploaded=await uploadFiles(p.files);}catch(er){toast(er.msg||'تعذّر رفع الملفات.','err');t.disabled=false;t.textContent=lbl;return;}}
+      const prev=await doAction(id,k,p);
+      if(prev){S.ui.act=null;S.ui.noDateDef=false;toast(k==='postpone'&&p.noDate?'تم تحويل الحجز إلى «مؤجل» — بانتظار موعد جديد':k==='receive'&&!p.wo?'تم تسجيل الوصول — الاستلام معلّق لحين كتابة رقم أمر الشغل':DONE[k]);if(k==='postpone'&&S.ui.scope==='day'&&!S.ui.q){/* keep current day so the user sees it left */}renderAll();renderDrawer();}else t.disabled=false;
+      return;
+    }
+    if(ds.copy){const v=ds.copy;try{await navigator.clipboard.writeText(v);toast('تم نسخ الرقم');}catch(_){toast('انسخ الرقم يدويًا: '+v);}return;}
+    if(ds.edit){const id=S.ui.openId;openForm(id);return;}
+    if(ds.del){S.ui.confirmDel=true;S.ui.act=null;renderDrawer();return;}
+    if(ds.delCancel){S.ui.confirmDel=false;renderDrawer();return;}
+    if(ds.delOk){const id=S.ui.openId;const ok=await write(()=>S.db.doc('bookings/'+id).delete());if(ok){closeDrawer();toast('تم حذف الحجز');}return;}
+    if(ds.setTab){S.ui.set.tab=ds.setTab;renderSettings();return;}
+    if(ds.setAct){settingsAct(ds.setAct);return;}
+    if(ds.setSave){saveSettings();return;}
+    if(ds.memberDel){const id=ds.memberDel;const ok=await write(()=>S.db.doc('members/'+id).delete(),'admin');if(ok)toast('تمت إزالة '+nameOf(id));return;}
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){if(!$('#lightbox').hidden){$('#lightbox').hidden=true;return;}if(!$('#modalWrap').hidden){closeModal();return;}if(!$('#drawerWrap').hidden){closeDrawer();return;}}
+    if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.row[data-open]')){e.preventDefault();openDrawer(e.target.dataset.open);}
+  });
+  setInterval(()=>{if(S.state==='ready'){renderCore();}},60000);
+  const tipEl=$('#tip');
+  const onTip=e=>{
+    const h=e.target&&e.target.closest?e.target.closest('[data-tipi],[data-tipt]'):null;
+    if(!h||effView()!=='executive'){if(!tipEl.hidden)tipEl.hidden=true;return;}
+    tipEl.innerHTML=h.dataset.tipi!=null?tipDay(+h.dataset.tipi):esc(h.dataset.tipt).replace(/\n/g,'<br>');tipEl.hidden=false;
+    const r=tipEl.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;
+    if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;
+    tipEl.style.left=Math.max(8,x)+'px';tipEl.style.top=Math.max(8,y)+'px';
+  };
+  document.addEventListener('pointermove',onTip);document.addEventListener('pointerdown',onTip);
+  document.addEventListener('scroll',()=>{if(!tipEl.hidden)tipEl.hidden=true;},{passive:true});
+  let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(effView()==='executive')renderExec();},150);});
+}
+init();
+</script>
+</body>
+</html>
