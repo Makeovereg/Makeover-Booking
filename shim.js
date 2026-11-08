@@ -1,7 +1,7 @@
 // Firebase adapter: gives the bookings page the same `window.claude.use(name)` interface
 // it uses inside Claude (db, user, assets, downloads), backed by Firebase instead.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { initializeFirestore, collection, doc, query, where, orderBy, limit, onSnapshot, getDoc, getDocs, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
 
@@ -115,21 +115,37 @@ const assets = storage ? {
 } : null;
 
 // ---------- sign-in gate ----------
+// Popup only: redirect sign-in breaks on phones that partition storage when the
+// app is hosted on a different domain from authDomain ("missing initial state").
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
+const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Line\/|Snapchat|TikTok|; wv\)/i.test(navigator.userAgent || '');
+const OPEN_IN_BROWSER = 'افتح اللينك في Chrome أو Safari مباشرة، مش من جوه واتساب أو فيسبوك أو إنستجرام، ومن غير وضع التصفح الخفي.';
+function signinNote(msg) {
+  show('signin');
+  const box = gate.querySelector('[data-g="signin"]');
+  let n = $('#gNote');
+  if (!n) { n = document.createElement('p'); n.id = 'gNote'; n.style.cssText = 'color:var(--danger);font-size:13px;font-weight:600'; box.appendChild(n); }
+  n.hidden = !msg; n.textContent = msg || '';
+}
+let signingIn = false;
 $('#gSignIn').addEventListener('click', async () => {
+  if (signingIn) return;
+  signingIn = true;
   try { await signInWithPopup(auth, provider); }
   catch (e) {
-    if (['auth/popup-blocked', 'auth/operation-not-supported-in-environment', 'auth/web-storage-unsupported'].includes(e.code)) { await signInWithRedirect(auth, provider); return; }
-    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') show('error', { error: errText(e) });
-  }
+    const c = (e && e.code) || '';
+    if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') { /* user closed it */ }
+    else if (c === 'auth/popup-blocked') signinNote('المتصفح منع نافذة الدخول. اضغط الزرار تاني، ولو اتكررت اسمح بالنوافذ المنبثقة (Pop-ups) للموقع ده.');
+    else if (c === 'auth/operation-not-supported-in-environment' || c === 'auth/web-storage-unsupported') signinNote('المتصفح ده مش بيدعم الدخول بحساب Google. ' + OPEN_IN_BROWSER);
+    else show('error', { error: errText(e) });
+  } finally { signingIn = false; }
 });
 gate.querySelectorAll('[data-signout]').forEach((b) => b.addEventListener('click', () => signOut(auth).then(() => location.reload())));
-getRedirectResult(auth).catch((e) => show('error', { error: errText(e) }));
 
 let booted = false;
 onAuthStateChanged(auth, async (u) => {
-  if (!u) { show('signin'); return; }
+  if (!u) { signinNote(IN_APP ? 'إنت فاتح اللينك من جوه تطبيق. ' + OPEN_IN_BROWSER : ''); return; }
   if (booted) return;
   booted = true;
   try { await boot(u); } catch (e) { booted = false; show('error', { error: errText(e) }); }
